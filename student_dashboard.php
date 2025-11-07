@@ -1,8 +1,16 @@
 <?php
 include('config.php');
+ob_start(); // Start output buffering
+
 session_start();
 
-if(!isset($_SESSION['student_logged_in']) || isset($_SESSION['student_logged_in'])!= true){
+// Prevent caching
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header("Expires: 0");
+
+if(!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in']!= true){
     header("Location: student_login.html");
     exit();
 }
@@ -62,6 +70,10 @@ $percentage = $total_marks > 0? ($obtained_marks/ $total_marks) *100 :0;
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
     <title>Student Result Analytics</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
@@ -106,8 +118,7 @@ $percentage = $total_marks > 0? ($obtained_marks/ $total_marks) *100 :0;
 
     </style>
     </head>
-<body>
-<body class="d-flex flex-column align-items-center py-5">
+<body class="d-flex flex-column align-items-center py-5" onload="noBack();">
 
   <div class="container col-md-8">
     <div class="card p-4">
@@ -168,7 +179,15 @@ $percentage = $total_marks > 0? ($obtained_marks/ $total_marks) *100 :0;
     </div>
   </div>
   
-
+  <script>
+    if (performance.navigation.type === 2) {
+    location.reload(true);
+}
+    window.history.forward();
+    function noBack() {
+        window.history.forward();
+    }
+</script>
  
 
 

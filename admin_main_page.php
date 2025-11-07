@@ -1,6 +1,12 @@
 <?php
 // This ensures only logged-in admins can see the dashboard.
 session_start();
+
+// Prevent browser from caching pages
+header("Cache-Control: no-cache, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] != true){
     header("Location: admin_login.html");
     exit();
@@ -33,7 +39,7 @@ if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] != true)
     </style>
   </head>
 
-  <body>
+  <body onload="noBack();">
     <!-- Navbar -->
     <nav class="navbar" style="background-color: #e3f2fd;" data-bs-theme="light">
       <div class="container-fluid">
@@ -139,6 +145,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   
 });
+window.history.forward();
+function noBack() {
+    window.history.forward();
+}
 </script>
 </body>
 </html>
