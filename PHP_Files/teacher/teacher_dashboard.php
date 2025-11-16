@@ -1,20 +1,30 @@
 <?php
 session_start();
-header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Cache-Control: no-cache, no-store, must-revalidate, max-age = 0");
+header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 header("Expires: 0"); 
 
-if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] != true){
-    header("Location: admin_login.php");
+// Redirect if not logged in
+if(!isset($_SESSION['teacher_logged_in']) || $_SESSION['teacher_logged_in'] != true){
+    header("Location: teacher_login.html?ts=" . time());
+    // Adding ?ts=timestamp ensures the browser treats it as a new page each time.
     exit();
 }
+// if (empty($_SESSION['teacher_logged_in'])) {
+//     header("Location: teacher_login.html");
+//     exit();
+// }
 ?>
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Student Result Analytics - Admin</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Student Result Analytics - Teacher</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 <style>
@@ -43,7 +53,7 @@ if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] != true)
     <button class="btn btn-outline-primary d-md-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
       <i class="bi bi-list"></i> Menu
     </button>
-    <a class="navbar-brand mb-0">Student Result Analytics | Admin</a>
+    <a class="navbar-brand mb-0">Student Result Analytics | Teacher</a>
 </div>
     <form class="d-flex ms-auto" role="search" action="logout.php">
       <button class="btn btn-outline-danger" type="submit">
@@ -59,56 +69,60 @@ if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] != true)
   <div class="row flex-md-nowrap flex-wrap">
     <!-- Desktop Sidebar -->
     <div class="col-12 col-md-3 col-lg-2 bg-dark text-white p-3 d-none d-md-block vh-100 vh-md-auto">
-      <h5>SRA | Admin</h5>
+      <h5>SRA | Teacher</h5>
       <ul class="nav flex-column mt-4">
         <li class="nav-item mb-2">
-          <a href="home.php" class="nav-link text-white ajax-link">
+          <a href="teacher_home.php" class="nav-link text-white ajax-link">
             <i class="bi bi-house"></i> Home/Dashboard
           </a>
         </li>
-        <!-- <li class="nav-item mb-2">
-          <a href="dashboard.php" class="nav-link text-white ajax-link">
-            <i class="bi bi-speedometer2"></i> Dashboard
+    
+        <li class="nav-item mb-2">
+          <a href="teacher_my_classes.php" class="nav-link text-white ajax-link">
+            <i class="bi bi-backpack"></i> My Classes
           </a>
-        </li> -->
+        </li>
+
+        <li class="nav-item mb-2">
+          <a href="teacher_my_students.php" class="nav-link text-white ajax-link">
+            <i class="bi bi-person-heart"></i> Students in Class
+          </a>
+        </li>
+
         <li class="nav-item mb-2">
           <a href="#studentClassesMenu" class="nav-link text-white" data-bs-toggle = "collapse"
                   roll = "button" aria-expanded = "false" aria-controls = "studentClassesMenu">
-            <i class="bi bi-table"></i> Student Classes
+            <i class="bi bi-table"></i> Manage Marks
           </a>
             <div class = "collapse" id = "studentClassesMenu">
               <ul class = "nav flex-column ms-3 mt-1">
-              <li class="nav-item">
-                        <a href="add_class.php" class="nav-link text-white ajax-link">
-                        <i class="bi bi-person-plus"></i>Add New Class
+                    <li class="nav-item">
+                        <a href="add_marks.php" class="nav-link text-white ajax-link">
+                        <i class="bi bi-person-plus"></i>Add Marks
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="manage_class.php" class="nav-link text-white ajax-link">
-                        <i class="bi bi-kanban"></i>Manage Class
+                        <a href="update_marks.php" class="nav-link text-white ajax-link">
+                        <i class="bi bi-kanban"></i>Update Marks
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="delete_marks.php" class="nav-link text-white ajax-link">
+                        <i class="bi bi-kanban"></i>Delete Marks
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="view_marks.php" class="nav-link text-white ajax-link">
+                        <i class="bi bi-kanban"></i>View Marks
                         </a>
                     </li>
                 </ul>
             </div>
         </li>
+
         <li class="nav-item mb-2">
-          <a href="subjects.php" class="nav-link text-white ajax-link">
-            <i class="bi bi-book"></i> Subjects
-          </a>
-        </li>
-        <li class="nav-item mb-2">
-          <a href="teachers.php" class="nav-link text-white ajax-link">
-            <i class="bi bi-person-square"></i> Teachers
-          </a>
-        </li>
-        <li class="nav-item mb-2">
-          <a href="students.php" class="nav-link text-white ajax-link">
-            <i class="bi bi-people"></i> Students
-          </a>
-        </li>
-        <li class="nav-item mb-2">
-          <a href="results.php" class="nav-link text-white ajax-link">
-            <i class="bi bi-trophy"></i> Result
+          <a href="teacher_profile.php" class="nav-link text-white ajax-link">
+            <i class="bi bi-person-circle"></i> Profile/Account
           </a>
         </li>
       </ul>
@@ -177,9 +191,22 @@ document.addEventListener('DOMContentLoaded', function() {
   loadPage('home.php');
   document.querySelector('.ajax-link[href="home.php"]').classList.add('active');
 });
+ 
+// window.history.forward();   // This immediately tries to move the browser forward in history.
+function noBack() {     // calls noBack that does the same thing: moves the user forward if they try to go back.
+    window.history.forward();   // // This immediately tries to move the browser forward in history.
+}
 
-window.history.forward();
-function noBack() { window.history.forward(); }
+window.onload = noBack;     // This calls the noBack function when the page loads
+window.onpageshow = function(evt) { // onpageshow fires even if the page comes from cache (like when the user presses the back button).
+    if (evt.persisted) noBack();
+}
+     
+/*
+    These lines make sure that if a user isn’t logged in, 
+    pressing the back button or opening a cached page won’t let them see the dashboard, 
+    forcing them to go to the login page instead.
+*/
 </script>
 </body>
 </html>

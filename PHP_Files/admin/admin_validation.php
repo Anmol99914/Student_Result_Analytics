@@ -26,7 +26,7 @@ if($username === $valid_username && $password === $valid_password){
     exit();
 }
 else{
-    header("Location: admin_login.php?error=invalid");
+    header("Location: admin_login.php?error=invalid+username+or+password");
     exit();
 
     // echo "<script>
