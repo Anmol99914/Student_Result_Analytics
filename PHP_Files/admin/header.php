@@ -28,8 +28,11 @@
   <nav class="navbar" style="background-color: #e3f2fd;" data-bs-theme="light">
     <div class="container-fluid">
       <a class="navbar-brand">Student Result Analytics | Admin</a>
-      <form class="d-flex" role="search" action="logout.php">
-        <button class="btn btn-outline-success" type="submit"><i class="bi bi-box-arrow-right"></i> Logout</button>
+      <form class="d-flex" role="search" action="__DIR__ . '/../admin/logout.php'">
+        <button class="btn btn-outline-success" type="submit">
+          <i class="bi bi-box-arrow-right"></i> 
+          Logout
+        </button>
       </form>
     </div>
   </nav>
@@ -40,7 +43,7 @@
       <h5>SRA | Admin</h5>
       <ul class="nav flex-column mt-4">
       <li class="nav-item">
-            <a href="admin_main_page.php" class="nav-link text-white"><i class="bi bi-house"></i> Home</a>
+            <a href="__DIR__ . '/../admin/admin_main_page.php'" class="nav-link text-white"><i class="bi bi-house"></i> Home</a>
           </li>
         <li class="nav-item">
           <a href="dashboard.php" class="nav-link text-white"><i class="bi bi-speedometer2"></i> Dashboard</a>

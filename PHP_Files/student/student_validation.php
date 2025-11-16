@@ -1,8 +1,16 @@
 <?php
 // Connect to database
-include('config.php');
+include_once __DIR__ . '/../../config.php';
 
 session_start();
+
+// Prevent caching
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header("Expires: 0");
+
+header("Cache-Control: no-store, max-age=0, must-revalidate, no-cache, private");
 
 if($_SERVER['REQUEST_METHOD'] == "POST"){
     $roll = $_POST['roll_num'];

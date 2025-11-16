@@ -1,22 +1,23 @@
 <?php
-include('config.php');
-ob_start(); // Start output buffering
+include_once __DIR__ . '/../../config.php';
 
 session_start();
-
-// Prevent caching
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Cache-Control: post-check=0, pre-check=0", false);
+header("Cache-Control: no-cache, no-store, must-revalidate max-age = 0");
 header("Pragma: no-cache");
-header("Expires: 0");
+header("Expires: 0"); 
 
-if(!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in']!= true){
+header("Cache-Control: no-store, max-age=0, must-revalidate, no-cache, private");
+
+if(!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in']!== true){
     header("Location: student_login.html");
     exit();
 }
 $roll = $_SESSION['student_id'] ?? 0;
 $semester = $_SESSION['semester_id'] ?? 0;
-
+// if($roll == 0 || $semester == 0){
+//     header("Location: student_login.html");
+//     exit();
+// }
 // If $_SESSION['student_id'] exists and is not null, assign its value to $roll.
 // Otherwise, assign 0 to $roll and same for sem.
 // ?? - null coalescing operator in PHP.
@@ -25,10 +26,7 @@ $semester = $_SESSION['semester_id'] ?? 0;
  $roll and $semester default to 0 → redirect back to login. 
 */
 
-if($roll == 0 || $semester == 0){
-    header("Location: student_login.html");
-    exit();
-}
+
 
 // Fetch student information
 $student_query = "SELECT student_name, semester_id FROM student WHERE student_id = '$roll'";
@@ -70,7 +68,7 @@ $percentage = $total_marks > 0? ($obtained_marks/ $total_marks) *100 :0;
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Cache-Control" content="no-store" />
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
 
@@ -79,6 +77,11 @@ $percentage = $total_marks > 0? ($obtained_marks/ $total_marks) *100 :0;
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
+    /* hide until we know it's a normal load */
+  html, body { 
+    visibility: hidden; height:100%; 
+  }
+
        @media print {
     body, html {
         width: 100%;
@@ -180,16 +183,17 @@ $percentage = $total_marks > 0? ($obtained_marks/ $total_marks) *100 :0;
   </div>
   
   <script>
-    if (performance.navigation.type === 2) {
-    location.reload(true);
-}
-    window.history.forward();
-    function noBack() {
-        window.history.forward();
-    }
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        // Page restored from BFCache → force revalidation
+        location.replace(window.location.href);
+        return;
+    } 
+    // Normal load: show the page
+    document.documentElement.style.visibility = 'visible';
+      document.body.style.visibility = 'visible';
+  }, false);
 </script>
- 
-
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous">
