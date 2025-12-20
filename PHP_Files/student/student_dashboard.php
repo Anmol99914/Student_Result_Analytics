@@ -1,203 +1,187 @@
 <?php
-include_once __DIR__ . '/../../config.php';
-
 session_start();
-header("Cache-Control: no-cache, no-store, must-revalidate max-age = 0");
+header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
-header("Expires: 0"); 
+header("Expires: 0");
 
-header("Cache-Control: no-store, max-age=0, must-revalidate, no-cache, private");
-
-if(!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in']!== true){
-    header("Location: student_login.html");
+if (!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in'] != true) {
+    header("Location: student_login.php");
     exit();
 }
-$roll = $_SESSION['student_id'] ?? 0;
-$semester = $_SESSION['semester_id'] ?? 0;
-// if($roll == 0 || $semester == 0){
-//     header("Location: student_login.html");
-//     exit();
-// }
-// If $_SESSION['student_id'] exists and is not null, assign its value to $roll.
-// Otherwise, assign 0 to $roll and same for sem.
-// ?? - null coalescing operator in PHP.
-
-/* The ?? 0 ensures that if someone tries to access the dashboard without logging in, 
- $roll and $semester default to 0 → redirect back to login. 
-*/
-
-
-
-// Fetch student information
-$student_query = "SELECT student_name, semester_id FROM student WHERE student_id = '$roll'";
-$student_result = mysqli_query($connection, $student_query);
-$student = mysqli_fetch_assoc($student_result); // Give me each row’s data in an associative array form
-
-// Fetch result with subject name
-$stmt = $connection->prepare("
-SELECT s.subject_name , r.marks_obtained, r.total_marks
-FROM result r
-JOIN subject s ON r.subject_id = s.subject_id 
-WHERE r.student_id = ? AND r.semester_id = ?; 
-");
-// connecting the subject table to the result table wheir their subject_id values are same
-// Show only the results where student_id = whatever is inside $roll, and semester_id = whatever is inside $semester
-$stmt->bind_param("si", $roll, $semester);
-$stmt->execute();
-$result_data = $stmt->get_result();
-
-// Calculate totals
-$total_marks = 0;
-$obtained_marks = 0;
-$total_subjects = mysqli_num_rows($result_data); // How many rows?
-$results = [];
-
-while($row = mysqli_fetch_assoc($result_data)){
-    $results[] = $row;
-    $total_marks += $row['total_marks'];
-    $obtained_marks += $row['marks_obtained'];
-}
-
-$percentage = $total_marks > 0? ($obtained_marks/ $total_marks) *100 :0; 
-
 ?>
-
 <!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Cache-Control" content="no-store" />
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Result Analytics | Student</title>
 
-    <title>Student Result Analytics</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-    /* hide until we know it's a normal load */
-  html, body { 
-    visibility: hidden; height:100%; 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+<style>
+  body, html {
+    height: 100%;
   }
+  #main-content {
+    background-color: #f9fafb;
+    border-radius: 8px;
+  }
+  .nav-link.active {
+    background-color: #0d6efd;
+    color: white !important;
+    border-radius: 5px;
+  }
+</style>
+</head>
 
-       @media print {
-    body, html {
-        width: 100%;
-        height: auto;
-        font-size: 18px; /* increase font size */
-    }
+<body class="d-flex flex-column min-vh-100" onload="noBack();">
 
-    .container, .card {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding: 0;
-        margin: 0;
-        box-shadow: none;
-        border: none;
-        background-color: white;
-    }
-
-    table {
-        width: 100% !important;
-        font-size: 18px;
-        border-collapse: collapse;
-    }
-
-    th, td {
-        padding: 14px;
-        border: 1px solid #000;
-    }
-
-    th {
-        font-size: 20px;
-    }
-
-    .print-btn, .btn-danger, .navbar, .footer {
-        display: none !important; /* hide buttons & navs */
-    }
-}
-
-    </style>
-    </head>
-<body class="d-flex flex-column align-items-center py-5" onload="noBack();">
-
-  <div class="container col-md-8">
-    <div class="card p-4">
-      <h2 class="text-center mb-4">Student Result Details</h2>
-      <div class="text-end mb-3">
-        <a href="student_logout.php" class="btn btn-danger">
-            <i class="bi bi-box-arrow-right"></i> Logout
-        </a>
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-light">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+      <button class="btn btn-outline-primary d-md-none me-2" type="button"
+              data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar">
+        <i class="bi bi-list"></i> Menu
+      </button>
+      <a class="navbar-brand mb-0">Student Result Analytics | Student</a>
     </div>
 
+    <form class="d-flex ms-auto" action="student_logout.php">
+      <button class="btn btn-outline-danger" type="submit">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </button>
+    </form>
+  </div>
+</nav>
 
-      <div class="mb-3">
-        <p><strong>Student Name:</strong> <?= $student['student_name']; ?></p>
-        <p><strong>Student Roll ID:</strong> <?= $roll; ?></p>
-        <p><strong>Student Class:</strong> <?= $semester; ?> Semester</p>
+<!-- Main container -->
+<div class="container-fluid flex-grow-1">
+  <div class="row flex-md-nowrap flex-wrap">
+
+    <!-- Desktop Sidebar -->
+    <div class="col-12 col-md-3 col-lg-2 bg-dark text-white p-3 d-none d-md-block vh-100">
+      <h5>SRA | Student</h5>
+
+      <ul class="nav flex-column mt-4">
+        <li class="nav-item mb-2">
+          <a href="student_home.php" class="nav-link text-white ajax-link">
+            <i class="bi bi-house"></i> Home
+          </a>
+        </li>
+
+        <li class="nav-item mb-2">
+          <a href="student_profile.php" class="nav-link text-white ajax-link">
+            <i class="bi bi-person"></i> My Profile
+          </a>
+        </li>
+
+        <li class="nav-item mb-2">
+          <a href="student_results.php" class="nav-link text-white ajax-link">
+            <i class="bi bi-trophy"></i> My Results
+          </a>
+        </li>
+
+        <li class="nav-item mb-2">
+          <a href="student_payments.php" class="nav-link text-white ajax-link">
+            <i class="bi bi-credit-card"></i> Payments
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Mobile Sidebar -->
+    <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="offcanvasSidebar">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">SRA | Student</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
       </div>
 
-      <table class="table  table-primary table-bordered text-center">
-        <thead>
-          <tr>
-            <th>S.N. </th>
-            <th>Subject</th>
-            <th>Marks Obtained</th>
-            <th>Total Marks</th>
-          </tr>
-        </thead>
-        <tbody class = "table-group-divider">
-          <?php
-          $count = 1;
-          foreach($results as $r){
-            echo "<tr>
-            <td>{$count}</td>
-            <td>{$r['subject_name']}</td>
-            <td>{$r['marks_obtained']}</td>
-            <td>{$r['total_marks']}</td>
-            </tr>";
-            $count++;
-          }
-          ?>
-        </tbody>
-        <tfoot class="table-primary">
-          <tr class="summary">
-            <td colspan="2" class="text-end"><b>Total Marks</b></td>
-            <td colspan="2"><b><?= $obtained_marks ?> out of <?= $total_marks ?></b></td>
-          </tr>
-          <tr class="summary">
-            <td colspan="2" class="text-end"><b>Percentage</b></td>
-            <td colspan="2"><b><?= round($percentage, 2) ?>%</b></td>
-          </tr>
-        </tfoot>
-      </table>
+      <div class="offcanvas-body p-0">
+        <ul class="nav flex-column mt-4">
+          <li class="nav-item">
+            <a href="student_home.php" class="nav-link text-white ajax-link">
+              <i class="bi bi-house"></i> Home
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="student_profile.php" class="nav-link text-white ajax-link">
+              <i class="bi bi-person"></i> My Profile
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="student_results.php" class="nav-link text-white ajax-link">
+              <i class="bi bi-trophy"></i> My Results
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="student_payments.php" class="nav-link text-white ajax-link">
+              <i class="bi bi-credit-card"></i> Payments
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
 
-      <div class="text-center mt-3">
-        <button class = "btn btn-outline-primary print-btn" onclick = "window.print()" style = "display-none">
-          <i class = "bi bi-printer"></i>Print
-        </button>
+    <!-- Main Content -->
+    <div id="main-content" class="col-12 col-md-9 col-lg-10 p-4">
+      <h1>Welcome, <?php echo $_SESSION['student_username']; ?>!</h1>
+      <p>Use the sidebar to view your profile, results, and payment status.</p>
     </div>
-    </div>
+
   </div>
-  
-  <script>
-window.addEventListener('pageshow', function(event) {
+</div>
+
+<!-- Footer -->
+<footer class="mt-auto bg-light text-center py-2 border-top">
+  © 2025 Student Result Analytics | Student Panel
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function loadPage(url) {
+  fetch(url)
+    .then(r => r.text())
+    .then(data => document.getElementById('main-content').innerHTML = data)
+    .catch(() => document.getElementById('main-content').innerHTML =
+      "<p class='text-danger'>Error loading page.</p>");
+}
+
+function setupLinks() {
+  const links = document.querySelectorAll('.ajax-link');
+  links.forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      links.forEach(l => l.classList.remove('active'));
+      this.classList.add('active');
+      loadPage(this.getAttribute('href'));
+
+      const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(
+        document.getElementById('offcanvasSidebar')
+      );
+      offcanvas.hide();
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  setupLinks();
+  loadPage('student_home.php');
+  document.querySelector('.ajax-link[href="student_home.php"]').classList.add('active');
+});
+
+window.history.forward();
+function noBack() { window.history.forward(); }
+
+window.addEventListener("pageshow", function (event) {
     if (event.persisted) {
-        // Page restored from BFCache → force revalidation
-        location.replace(window.location.href);
-        return;
-    } 
-    // Normal load: show the page
-    document.documentElement.style.visibility = 'visible';
-      document.body.style.visibility = 'visible';
-  }, false);
+        window.location.reload();
+    }
+});
+
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous">
-</script>
 </body>
-
 </html>

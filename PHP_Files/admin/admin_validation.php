@@ -1,38 +1,48 @@
 <?php
-include('config.php');
-
+include('../../config.php');
 session_start();
 
-
-// Prevent caching
+/* Prevent caching */
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 header("Expires: 0");
 
-header("Cache-Control: no-store, max-age=0, must-revalidate, no-cache, private");
+/* Get data from form */
+$username = trim($_POST['username'] ?? '');
+$password = trim($_POST['password'] ?? '');
 
-//Get data from form
-$username = $_POST['username'];
-$password = $_POST['password'];
-
-$valid_username = "admin999";
-$valid_password = "iamadmin";
-
-if($username === $valid_username && $password === $valid_password){
-    $_SESSION['admin_logged_in'] = true;
-    $_SESSION['admin_username'] = $username;
-    header("Location: admin_main_page.php");
+/* Basic validation */
+if ($username === '' || $password === '') {
+    header("Location: admin_login.php?error=empty+fields");
     exit();
 }
-else{
-    header("Location: admin_login.php?error=invalid+username+or+password");
-    exit();
 
-    // echo "<script>
-    // alert('Invalid username or password!');
-    // window.location.href = 'admin_login.html';
-    // </script>
-    // ";
+/* Fetch admin from database */
+$stmt = $connection->prepare(
+    "SELECT admin_id, name, email, password 
+     FROM administrator 
+     WHERE email = ?"
+);
+$stmt->bind_param("s", $username);
+$stmt->execute();
+$result = $stmt->get_result();
+
+/* Check credentials */
+if ($admin = $result->fetch_assoc()) {
+
+    if (password_verify($password, $admin['password'])) {
+
+        $_SESSION['admin_logged_in'] = true;
+        $_SESSION['admin_id'] = $admin['admin_id'];
+        $_SESSION['admin_name'] = $admin['name'];
+
+        header("Location: admin_main_page.php");
+        exit();
+    }
 }
+
+/* Invalid login */
+header("Location: admin_login.php?error=invalid+username+or+password");
+exit();
 ?>

@@ -8,6 +8,6 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-header("Location: student_login.php");
+header("Location: teacher_login.php");
 exit();
 ?>

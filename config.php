@@ -2,7 +2,7 @@
 $host = "localhost";
 $username = "root";
 $password = "installationprocess12345";
-$database = "student_result";
+$database = "sra";
 $port = 3307;
 
 

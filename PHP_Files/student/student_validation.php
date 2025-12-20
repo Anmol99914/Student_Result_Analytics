@@ -1,51 +1,64 @@
 <?php
-// Connect to database
-include_once __DIR__ . '/../../config.php';
-
 session_start();
+include('../../config.php');
 
-// Prevent caching
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Cache-Control: post-check=0, pre-check=0", false);
-header("Pragma: no-cache");
-header("Expires: 0");
-
-header("Cache-Control: no-store, max-age=0, must-revalidate, no-cache, private");
-
-if($_SERVER['REQUEST_METHOD'] == "POST"){
-    $roll = $_POST['roll_num'];
-    $semester = $_POST['semester'];
-}
-// var_dump($roll, $semester);
-// exit();
-if (empty($roll) || empty($semester)) {
-    echo "<script>
-    alert('Please enter Roll Number and select Semester'); 
-    window.location.href='student_login.html';
-    </script>";
+// Prevent direct access
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("Location: student_login.php");
     exit();
 }
 
-// Check if the student exists (p.s hopefully hos :) 
-$sql = "SELECT * FROM student WHERE student_id = '$roll' AND semester_id = '$semester'";
-$result = mysqli_query($connection, $sql);
+$username = trim($_POST['username']);
+$password = trim($_POST['password']);
 
-// The PHP script checks if the Roll ID and semester exist in the database.
-// If valid, it stores them in the session
+// Check in users table
+$stmt = $connection->prepare("SELECT password, role FROM users WHERE username = ? AND role = 'student'");
+$stmt->bind_param("s", $username);
+$stmt->execute();
+$stmt->store_result();
+$stmt->bind_result($hashed_password, $role);
 
-if(mysqli_num_rows($result) > 0){
-    $_SESSION['student_logged_in'] = true;
-    $_SESSION['student_id'] = $roll;
-    $_SESSION['semester_id'] = $semester;
-    header('Location: student_dashboard.php');
+if($stmt->fetch() && password_verify($password, $hashed_password)) {
+    // Get student details from student table
+    $stmt2 = $connection->prepare("SELECT student_name, email, class_id, semester_id, is_active FROM student WHERE student_id = ?");
+    $stmt2->bind_param("s", $username);
+    $stmt2->execute();
+    $stmt2->store_result();
+    $stmt2->bind_result($student_name, $email, $class_id, $semester_id, $is_active);
+    
+    if($stmt2->fetch()){
+        // Check if student is active
+        if($is_active != 1){
+            // Student is inactive
+            session_unset();
+            session_destroy();
+            header("Location: student_login.php?error=inactive");
+            exit();
+        }
+        
+        // Set session variables
+        $_SESSION['student_logged_in'] = true;
+        $_SESSION['student_username'] = $username;
+        $_SESSION['student_name'] = $student_name;
+        $_SESSION['student_email'] = $email;
+        $_SESSION['student_class'] = $class_id;
+        $_SESSION['student_semester'] = $semester_id;
+
+        header("Location: student_dashboard.php");
+        exit();
+    } else {
+        // Student exists in users table but not in student table (data inconsistency)
+        session_unset();
+        session_destroy();
+        header("Location: student_login.php?error=invalid");
+        exit();
+    }
+    $stmt2->close();
+
+} else {
+    session_unset();
+    session_destroy();
+    header("Location: student_login.php?error=invalid");
     exit();
 }
-else{
-    echo "<script>
-    alert('Invalid roll number or semester!');
-    window.location.href = 'student_login.html';
-    </script>";
-}
-
-
 ?>

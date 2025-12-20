@@ -1,63 +1,60 @@
 <?php
-// Connect to database
-include_once __DIR__ . '/../../config.php';
-
 session_start();
+include('../../config.php');
 
-// Prevent caching
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Cache-Control: post-check=0, pre-check=0", false);
-header("Pragma: no-cache");
-header("Expires: 0");
-
-header("Cache-Control: no-store, max-age=0, must-revalidate, no-cache, private");
-
-if($_SERVER['REQUEST_METHOD'] == "POST"){
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-    
-}
-
-// Validation 
-if (empty($email) || empty($password)) {
-    echo "<script>
-    alert('Please enter Email and Password'); 
-    window.location.href='teacher_login.html';
-    </script>";
+// Prevent direct access
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    header("Location: teacher_login.php");
     exit();
 }
 
-// Fetch teacher from teacher table
-$sql = "SELECT * FROM teacher WHERE email = ?";
-$stmt = $connection->prepare($sql);
-$stmt->bind_param("s",$email);
+$email = trim($_POST['email'] ?? '');
+$password = trim($_POST['password'] ?? '');
+
+// Validate inputs
+if(empty($email) || empty($password)){
+    header("Location: teacher_login.php?error=empty");
+    exit();
+}
+
+// Check in teacher table (teachers login with email)
+$stmt = $connection->prepare("SELECT teacher_id, name, email, password, status FROM teacher WHERE email = ?");
+$stmt->bind_param("s", $email);
 $stmt->execute();
-$result = $stmt->get_result();
+$stmt->store_result();
 
-// The PHP script checks if the Email and password exist in the database.
-// If valid, it stores them in the session
+if($stmt->num_rows === 0){
+    // No teacher found with this email
+    header("Location: teacher_login.php?error=invalid");
+    exit();
+}
 
-if($result->num_rows === 1){
-    $teacher = $result->fetch_assoc();
+$stmt->bind_result($teacher_id, $teacher_name, $teacher_email, $hashed_password, $status);
+$stmt->fetch();
+$stmt->close();
 
-    // If passwords are plain text (temporary)
-    if ($password === $teacher['password']) {
-        $_SESSION['teacher_logged_in'] = true;
-        $_SESSION['teacher_id'] = $teacher['teacher_id'];
-        $_SESSION['teacher_name'] = $teacher['name'];
-        $_SESSION['assigned_class_id'] = $teacher['assigned_class_id'];
-        header("Location: teacher_dashboard.php");
-        exit();
-    }   
-    else{
-        // Redirect with error message :)
-        header('Location: teacher_login.html?error=Incorrect+password');
+// Verify password
+if(password_verify($password, $hashed_password)) {
+    // Check if teacher is active
+    if($status !== 'active'){
+        // Teacher is inactive
+        header("Location: teacher_login.php?error=inactive");
         exit();
     }
-}
-else {
-    header('Location: teacher_login.html?error=No+teacher+found+with+this+email');
+    
+    // Set session variables
+    $_SESSION['teacher_logged_in'] = true;
+    $_SESSION['teacher_id'] = $teacher_id;
+    $_SESSION['teacher_name'] = $teacher_name;
+    $_SESSION['teacher_email'] = $teacher_email;
+
+    // Redirect to dashboard
+    header("Location: teacher_dashboard.php");
+    exit();
+
+} else {
+    // Wrong password
+    header("Location: teacher_login.php?error=invalid");
     exit();
 }
-
 ?>
