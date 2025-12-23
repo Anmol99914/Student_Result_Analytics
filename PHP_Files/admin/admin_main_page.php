@@ -115,7 +115,7 @@ if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] != true)
           </a>
         </li>
         <li class="nav-item mb-2">
-          <a href="teachers.php" class="nav-link text-white ajax-link">
+          <a href="admin_teachers.php" class="nav-link text-white ajax-link">
             <i class="bi bi-person-square"></i> Teachers
           </a>
         </li>

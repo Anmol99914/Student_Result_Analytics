@@ -7,10 +7,20 @@ if (!isset($_SESSION['student_logged_in']) || $_SESSION['student_logged_in'] !==
     exit();
 }
 
-// Get student details from database
+// Get student details from database with class and semester info
 $student_id = $_SESSION['student_username'];
 
-$stmt = $connection->prepare("SELECT * FROM student WHERE student_id = ?");
+$stmt = $connection->prepare("
+    SELECT 
+        s.*, 
+        c.faculty, 
+        c.semester as class_semester,
+        sem.semester_name
+    FROM student s 
+    LEFT JOIN class c ON s.class_id = c.class_id 
+    LEFT JOIN semester sem ON s.semester_id = sem.semester_id 
+    WHERE s.student_id = ?
+");
 $stmt->bind_param("s", $student_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -38,8 +48,33 @@ $student = $result->fetch_assoc();
                         <i class="bi bi-mortarboard"></i> Academic Summary
                     </h5>
                     <hr>
-                    <p><strong>Class:</strong> <?php echo htmlspecialchars($student['class_id']); ?></p>
-                    <p><strong>Semester:</strong> <?php echo htmlspecialchars($student['semester_id']); ?></p>
+                    <p><strong>Class:</strong> 
+                        <?php 
+                        if(!empty($student['faculty'])) {
+                            echo htmlspecialchars($student['faculty']);
+                        } else {
+                            echo "Class ID: " . htmlspecialchars($student['class_id']);
+                        }
+                        ?>
+                    </p>
+                    <p><strong>Semester:</strong> 
+                        <?php 
+                        if(!empty($student['semester_name'])) {
+                            echo htmlspecialchars($student['semester_name']);
+                        } else {
+                            echo "Semester " . htmlspecialchars($student['semester_id']);
+                        }
+                        ?>
+                    </p>
+                    <p><strong>Batch:</strong> 
+                        <?php 
+                        if(!empty($student['class_semester'])) {
+                            echo "Semester " . htmlspecialchars($student['class_semester']);
+                        } else {
+                            echo "N/A";
+                        }
+                        ?>
+                    </p>
                     <p><strong>Result Status:</strong> <span class="text-success">Published</span></p>
                 </div>
             </div>

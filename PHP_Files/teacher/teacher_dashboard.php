@@ -8,6 +8,9 @@ if (!isset($_SESSION['teacher_logged_in']) || $_SESSION['teacher_logged_in'] != 
     header("Location: teacher_login.php");
     exit();
 }
+
+// Get teacher_id for reference
+$teacher_id = $_SESSION['teacher_id'];
 ?>
 <!doctype html>
 <html lang="en">
@@ -39,6 +42,8 @@ if (!isset($_SESSION['teacher_logged_in']) || $_SESSION['teacher_logged_in'] != 
     background-color: rgba(255,255,255,0.1); 
     color: white;
   }
+  .class-card { cursor: pointer; transition: transform 0.2s; }
+  .class-card:hover { transform: translateY(-2px); }
 </style>
 </head>
 <body class="d-flex flex-column min-vh-100" onload="noBack();">
@@ -213,6 +218,9 @@ if (!isset($_SESSION['teacher_logged_in']) || $_SESSION['teacher_logged_in'] != 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Store teacher ID for reference
+const TEACHER_ID = <?php echo $teacher_id; ?>;
+
 // Functions for navigation
 function showHome() {
   setActiveLink('home');
@@ -267,10 +275,14 @@ function showHome() {
 
 function showMyClasses() {
   setActiveLink('classes');
+  
   document.getElementById('main-content').innerHTML = `
     <div class="card shadow">
       <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-table me-2"></i> My Assigned Classes</h5>
+        <button class="btn btn-sm btn-light" onclick="showHome()">
+          <i class="bi bi-house"></i> Dashboard
+        </button>
       </div>
       <div class="card-body">
         <div id="classes-container">
@@ -284,44 +296,115 @@ function showMyClasses() {
       </div>
     </div>
   `;
-  
-  // We'll implement this function next
   loadTeacherClasses();
 }
 
 function showAddStudentForm() {
   setActiveLink('addStudent');
   
-  let html = `
-    <div class="card shadow">
-      <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i> Add New Student</h5>
-        <button class="btn btn-sm btn-light" onclick="closeIframeView()">
-          <i class="bi bi-x-lg"></i> Close
-        </button>
-      </div>
-      <div class="card-body p-0">
-        <iframe id="addStudentFrame" src="Students/add_student.php" 
-                style="width: 100%; height: 600px; border: none;"></iframe>
-      </div>
-    </div>
-  `;
+  fetch('Students/add_student.php')
+    .then(response => response.text())
+    .then(html => {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      const formContent = tempDiv.querySelector('.form-container') ? 
+                         tempDiv.querySelector('.form-container').outerHTML :
+                         tempDiv.innerHTML;
+      
+      document.getElementById('main-content').innerHTML = `
+        <div class="card shadow">
+          <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-person-plus me-2"></i> Add New Student</h5>
+            <button class="btn btn-sm btn-light" onclick="showHome()">
+              <i class="bi bi-house"></i> Dashboard
+            </button>
+          </div>
+          <div class="card-body">
+            ${formContent}
+          </div>
+        </div>
+      `;
+      
+      const scripts = tempDiv.querySelectorAll('script');
+      setTimeout(() => {
+        scripts.forEach(oldScript => {
+          const newScript = document.createElement('script');
+          if (oldScript.src) {
+            newScript.src = oldScript.src;
+          } else {
+            try {
+              const scriptContent = oldScript.textContent;
+              const scriptElement = document.createElement('script');
+              scriptElement.textContent = scriptContent;
+              document.body.appendChild(scriptElement);
+              document.body.removeChild(scriptElement);
+            } catch (error) {
+              console.error('Error executing script:', error);
+            }
+          }
+        });
+        
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+          console.log("Found submit button, attaching handler");
+          submitBtn.addEventListener('click', function() {
+            console.log("Submit button clicked - manual handler");
+            submitStudentForm();
+          });
+        }
+      }, 100);
+    })
+    .catch(error => {
+      document.getElementById('main-content').innerHTML = `
+        <div class="alert alert-danger">
+          Error loading student form: ${error}
+        </div>
+      `;
+    });
+}
+
+window.submitStudentForm = function() {
+  console.log("Parent window submitStudentForm called");
   
-  document.getElementById('main-content').innerHTML = html;
-}
-
-// Add this function to close iframe view
-function closeIframeView() {
-  showHome();
-}
-
-// Add this function to refresh the iframe (useful for after adding student)
-function refreshAddStudentFrame() {
-  const frame = document.getElementById('addStudentFrame');
-  if (frame) {
-    frame.src = frame.src; // Reload the iframe
+  const form = document.getElementById('addStudentForm');
+  if (!form) {
+    console.error("Form not found!");
+    return;
   }
-}
+  
+  const formData = new FormData(form);
+  
+  const submitBtn = document.getElementById('submitBtn');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.innerHTML = 'Adding...';
+  submitBtn.disabled = true;
+  
+  fetch('Students/process_add_student.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    submitBtn.innerHTML = originalText;
+    submitBtn.disabled = false;
+    
+    if (data.success) {
+      alert("✅ Student added!\nID: " + data.student_id + "\nPassword: " + data.password);
+      form.reset();
+      if (document.getElementById('student_name')) {
+        document.getElementById('student_name').focus();
+      }
+    } else {
+      alert("❌ Error: " + data.message);
+    }
+  })
+  .catch(error => {
+    submitBtn.innerHTML = originalText;
+    submitBtn.disabled = false;
+    alert("❌ Network error: " + error);
+  });
+};
 
 function showMyStudents() {
   setActiveLink('students');
@@ -334,10 +417,10 @@ function showMyStudents() {
           <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="bi bi-people me-2"></i> My Students</h5>
             <button class="btn btn-sm btn-light" onclick="showHome()">
-              <i class="bi bi-arrow-left"></i> Back
+              <i class="bi bi-house"></i> Dashboard
             </button>
           </div>
-          <div class="card-body p-0">
+          <div class="card-body">
             ${html}
           </div>
         </div>
@@ -354,54 +437,217 @@ function showMyStudents() {
 
 function showAddResultForm() {
   setActiveLink('results');
+  
   document.getElementById('main-content').innerHTML = `
     <div class="card shadow">
       <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-trophy me-2"></i> Enter Results</h5>
+        <button class="btn btn-sm btn-light" onclick="showHome()">
+          <i class="bi bi-house"></i> Dashboard
+        </button>
       </div>
       <div class="card-body">
-        <div class="text-center py-5">
-          <h4><i class="bi bi-hourglass-split text-warning"></i></h4>
-          <p class="lead">Result entry feature</p>
-          <p class="text-muted">Will allow you to enter marks for students in your subjects.</p>
+        <div class="text-center py-5" id="enter-results-container">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading your classes...</p>
         </div>
       </div>
     </div>
   `;
+  
+  // Load classes for results
+  setTimeout(() => {
+    fetch(`Results/get_classes_for_results.php?teacher_id=${TEACHER_ID}`)
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('enter-results-container').innerHTML = html;
+        
+        // Add click handlers to class cards
+        document.querySelectorAll('.class-card').forEach(card => {
+          card.addEventListener('click', function() {
+            const classId = this.getAttribute('data-class-id');
+            const faculty = this.getAttribute('data-faculty');
+            const semester = this.getAttribute('data-semester');
+            
+            if (classId && faculty && semester) {
+              handleClassClick(classId, faculty, semester);
+            } else {
+              console.error("Missing data attributes:", {classId, faculty, semester});
+            }
+          });
+        });
+      })
+      .catch(error => {
+        document.getElementById('enter-results-container').innerHTML = `
+          <div class="alert alert-danger">
+            Error loading classes: ${error}
+          </div>
+        `;
+      });
+  }, 300);
 }
+
+// Function to handle class selection for results
+function handleClassClick(classId, faculty, semester) {
+  console.log("Class selected for results:", {classId, faculty, semester});
+  
+  if (!classId || !faculty || !semester) {
+    alert("Error: Missing class information");
+    return;
+  }
+  
+  // Show loading
+  document.getElementById('main-content').innerHTML = `
+    <div class="card shadow">
+      <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-trophy me-2"></i> Enter Results</h5>
+        <button class="btn btn-sm btn-light" onclick="showAddResultForm()">
+          <i class="bi bi-arrow-left"></i> Back to Classes
+        </button>
+      </div>
+      <div class="card-body text-center">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading subjects for ${faculty} - Semester ${semester}...</p>
+      </div>
+    </div>
+  `;
+  
+  // Load subjects for the selected class
+  setTimeout(() => {
+    fetch(`Results/get_subjects.php?class_id=${classId}&faculty=${encodeURIComponent(faculty)}&semester=${semester}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(html => {
+        document.getElementById('main-content').innerHTML = `
+          <div class="card shadow">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+              <h5 class="mb-0"><i class="bi bi-trophy me-2"></i> Enter Results - ${faculty} (Sem ${semester})</h5>
+              <div>
+                <button class="btn btn-sm btn-outline-secondary me-2" onclick="showAddResultForm()">
+                  <i class="bi bi-arrow-left"></i> Back to Classes
+                </button>
+                <button class="btn btn-sm btn-light" onclick="showHome()">
+                  <i class="bi bi-house"></i> Dashboard
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              ${html}
+            </div>
+          </div>
+        `;
+        
+        // Execute any scripts in the loaded content
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const scripts = tempDiv.querySelectorAll('script');
+        scripts.forEach(script => {
+          const newScript = document.createElement('script');
+          if (script.src) {
+            newScript.src = script.src;
+          } else {
+            newScript.textContent = script.textContent;
+          }
+          document.body.appendChild(newScript);
+          setTimeout(() => {
+            if (newScript.parentNode) {
+              document.body.removeChild(newScript);
+            }
+          }, 100);
+        });
+      })
+      .catch(error => {
+        console.error("Error loading subjects:", error);
+        document.getElementById('main-content').innerHTML = `
+          <div class="card shadow">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+              <h5 class="mb-0"><i class="bi bi-trophy me-2"></i> Enter Results</h5>
+              <button class="btn btn-sm btn-light" onclick="showAddResultForm()">
+                <i class="bi bi-arrow-left"></i> Back to Classes
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-danger">
+                <h5>Error loading subjects</h5>
+                <p>${error.message}</p>
+                <p>Please check if the following files exist:</p>
+                <ul>
+                  <li><code>Results/get_subjects.php</code></li>
+                  <li><code>Results/get_classes_for_results.php</code></li>
+                </ul>
+                <button class="btn btn-primary" onclick="showAddResultForm()">
+                  <i class="bi bi-arrow-left"></i> Go Back
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+  }, 500);
+}
+
+// Make function globally available
+window.handleClassClick = handleClassClick;
+window.selectClass = handleClassClick;
 
 function showProfile() {
   setActiveLink('profile');
-  document.getElementById('main-content').innerHTML = `
-    <div class="card shadow">
-      <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-person me-2"></i> My Profile</h5>
-      </div>
-      <div class="card-body">
-        <div class="text-center py-5">
-          <h4><i class="bi bi-hourglass-split text-secondary"></i></h4>
-          <p class="lead">Profile management feature</p>
-          <p class="text-muted">Will show your teacher profile and allow updates.</p>
+  
+  fetch('profile.php')
+    .then(response => response.text())
+    .then(html => {
+      document.getElementById('main-content').innerHTML = `
+        <div class="card shadow">
+          <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-person me-2"></i> My Profile</h5>
+            <button class="btn btn-sm btn-light" onclick="showHome()">
+              <i class="bi bi-house"></i> Dashboard
+            </button>
+          </div>
+          <div class="card-body">
+            ${html}
+          </div>
         </div>
-      </div>
-    </div>
-  `;
+      `;
+    })
+    .catch(error => {
+      document.getElementById('main-content').innerHTML = `
+        <div class="card shadow">
+          <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-person me-2"></i> My Profile</h5>
+            <button class="btn btn-sm btn-light" onclick="showHome()">
+              <i class="bi bi-house"></i> Dashboard
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="text-center py-5">
+              <h4><i class="bi bi-hourglass-split text-secondary"></i></h4>
+              <p class="lead">Profile management feature</p>
+              <p class="text-muted">Will show your teacher profile and allow updates.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    });
 }
 
 function setActiveLink(linkName) {
-  // Remove active class from all links
   document.querySelectorAll('.sidebar .nav-link').forEach(link => {
     link.classList.remove('active');
   });
-  
-  // Add active class to clicked link (simplified for now)
-  // We'll implement proper highlighting when we add the actual content
 }
 
 function loadTeacherClasses() {
   const container = document.getElementById('classes-container');
   
-  // Show loading
   container.innerHTML = `
     <div class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
@@ -411,7 +657,6 @@ function loadTeacherClasses() {
     </div>
   `;
   
-  // Fetch teacher's classes
   fetch('get_teacher_classes.php')
     .then(response => response.json())
     .then(classes => {
@@ -487,7 +732,6 @@ function loadTeacherClasses() {
 }
 
 function viewClassStudents(classId) {
-  // We'll implement this in the next step
   alert('View students of class ID: ' + classId + '\nNext step: Implement student list for this class');
 }
 
@@ -551,7 +795,6 @@ function showAddResultForStudent(studentId) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-  // Set home as active by default
   const homeLink = document.querySelector('.sidebar .nav-link');
   if(homeLink) homeLink.classList.add('active');
 });

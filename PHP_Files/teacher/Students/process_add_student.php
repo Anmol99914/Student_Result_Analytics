@@ -1,9 +1,10 @@
 <?php
 session_start();
 require_once '../../../config.php';
+header('Content-Type: application/json');
 
 if (!isset($_SESSION['teacher_logged_in']) || $_SESSION['teacher_logged_in'] != true) {
-    header("Location: ../teacher_login.php");
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
@@ -32,8 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $can_add = $can_add_row['can_add'];
     
     if ($can_add == 0) {
-        $_SESSION['error'] = "You are not authorized to add students to this class.";
-        header("Location: add_student.php");
+        echo json_encode(['success' => false, 'message' => 'You are not authorized to add students to this class.']);
         exit();
     }
     
@@ -49,10 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($class_data) {
             $faculty = $class_data['faculty'];
-            $faculty_code = substr($faculty, 0, 3) . substr($faculty, -3, 3);
+            $faculty_code = substr($faculty, 0, 3); // Just first 3 characters
             $random_num = rand(100, 999);
             $student_id = strtoupper($faculty_code) . $random_num;
-        } else {
+        }else {
             $student_id = 'STU' . rand(1000, 9999);
         }
     }
@@ -77,8 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         
         if ($stmt->execute()) {
-            $_SESSION['success'] = "✅ Student '$student_name' added successfully!<br>Student ID: <strong>$student_id</strong><br>Password: <strong>$password</strong>";
-            header("Location: add_student.php");
+            echo json_encode([
+                'success' => true, 
+                'message' => "✅ Student '$student_name' added successfully!",
+                'student_id' => $student_id,
+                'password' => $password
+            ]);
             exit();
         } else {
             throw new Exception($stmt->error);
@@ -86,15 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
     } catch (Exception $e) {
         if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-            $_SESSION['error'] = "❌ Email or Student ID already exists.";
+            echo json_encode(['success' => false, 'message' => '❌ Email or Student ID already exists.']);
         } else {
-            $_SESSION['error'] = "❌ Error adding student: " . $e->getMessage();
+            echo json_encode(['success' => false, 'message' => '❌ Error adding student: ' . $e->getMessage()]);
         }
-        header("Location: add_student.php");
         exit();
     }
 } else {
-    header("Location: add_student.php");
+    echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
     exit();
 }
 ?>

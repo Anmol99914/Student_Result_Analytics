@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../../../config.php'; // From PHP_Files/teacher/Students to root
+require_once '../../../config.php';
 
 if (!isset($_SESSION['teacher_logged_in']) || $_SESSION['teacher_logged_in'] != true) {
     header("Location: ../teacher_login.php");
@@ -23,7 +23,6 @@ $teacher_classes = $result->fetch_all(MYSQLI_ASSOC);
 $semester_result = $connection->query("SELECT * FROM semester");
 $semesters = $semester_result->fetch_all(MYSQLI_ASSOC);
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,28 +40,22 @@ $semesters = $semester_result->fetch_all(MYSQLI_ASSOC);
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
     </style>
+    <!-- ADD THIS SCRIPT IN HEAD TO DEFINE FUNCTIONS EARLY -->
+    <script>
+        // Define the function BEFORE the form loads
+        function handleFormSubmit(event) {
+            console.log("Form submission intercepted - TEST");
+            event.preventDefault(); // This stops normal form submission
+            
+            // Show we're intercepting
+            alert("Form is being handled by JavaScript - This should work!");
+            
+            // Don't submit the form normally
+            return false;
+        }
+    </script>
 </head>
 <body>
-    <div class="container mt-4">
-        <?php
-        // Display success/error messages
-        if (isset($_SESSION['success'])) {
-            echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
-                    ' . $_SESSION['success'] . '
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                  </div>';
-            unset($_SESSION['success']);
-        }
-        
-        if (isset($_SESSION['error'])) {
-            echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    ' . $_SESSION['error'] . '
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                  </div>';
-            unset($_SESSION['error']);
-        }
-        ?>
-    </div>
     <div class="container mt-5">
         <div class="form-container">
             <h2 class="mb-4 text-center">📝 Add New Student</h2>
@@ -74,7 +67,8 @@ $semesters = $semester_result->fetch_all(MYSQLI_ASSOC);
                 </div>
             <?php else: ?>
             
-            <form id="addStudentForm" action="process_add_student.php" method="POST">
+            <!-- SIMPLE FORM WITH NO ACTION - JavaScript will handle it -->
+            <form id="addStudentForm">
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="student_name" class="form-label">Student Name *</label>
@@ -134,67 +128,127 @@ $semesters = $semester_result->fetch_all(MYSQLI_ASSOC);
                 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                     <button type="reset" class="btn btn-secondary me-md-2">Reset</button>
-                    <button type="submit" class="btn btn-primary">Add Student</button>
+                    <button type="button" id="submitBtn" class="btn btn-primary">Add Student</button>
                 </div>
             </form>
             
             <?php endif; ?>
             
             <div class="mt-4 d-flex justify-content-between">
-    <div>
-        <button onclick="window.parent.refreshAddStudentFrame(); return false;" class="btn btn-outline-success">
-            <i class="bi bi-plus-circle"></i> Add Another Student
-        </button>
-    </div>
-    <div>
-        <button onclick="window.parent.closeIframeView(); return false;" class="btn btn-outline-dark">
-            ← Back to Dashboard
-        </button>
-    </div>
-</div>
+                <div>
+                    <button id="addAnotherBtn" class="btn btn-outline-success">
+                        <i class="bi bi-plus-circle"></i> Add Another Student
+                    </button>
+                </div>
+                <div>
+                    <button onclick="window.parent.showHome(); return false;" class="btn btn-outline-dark">
+                        ← Back to Dashboard
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-generate student ID based on class and faculty
-        document.getElementById('class_id').addEventListener('change', function() {
-            const classId = this.value;
-            const studentIdField = document.getElementById('student_id');
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Page loaded - initializing form");
             
-            if (classId && !studentIdField.value) {
-                // Fetch class details to generate ID
-                fetch('get_class_details.php?class_id=' + classId)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.faculty) {
-                            // Generate simple ID: Faculty + Random 3 digits
-                            const random = Math.floor(100 + Math.random() * 900);
-                            const facultyCode = data.faculty.substring(0, 3).toUpperCase();
-                            studentIdField.value = facultyCode + random;
-                        }
-                    });
-            }
+            // 1. Setup auto-generate student ID
+            document.getElementById('class_id').addEventListener('change', function() {
+                const classId = this.value;
+                const studentIdField = document.getElementById('student_id');
+                
+                if (classId && !studentIdField.value) {
+                    fetch('get_class_details.php?class_id=' + classId)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.faculty) {
+                                const random = Math.floor(100 + Math.random() * 900);
+                                const facultyCode = data.faculty.substring(0, 3).toUpperCase();
+                                studentIdField.value = facultyCode + random;
+                            }
+                        });
+                }
+            });
+            
+            // 2. Setup submit button (NOT a submit type button)
+            document.getElementById('submitBtn').addEventListener('click', function() {
+                console.log("Submit button clicked");
+                submitStudentForm();
+            });
+            
+            // 3. Setup Add Another button
+            document.getElementById('addAnotherBtn').addEventListener('click', function() {
+                document.getElementById('addStudentForm').reset();
+                document.getElementById('student_name').focus();
+            });
+            
+            // 4. Also prevent form submission via Enter key
+            document.getElementById('addStudentForm').addEventListener('submit', function(event) {
+                console.log("Form submit event - preventing default");
+                event.preventDefault();
+                return false;
+            });
+            
+            console.log("Form initialized successfully");
         });
+        
+        // Function to submit the form via AJAX
+        function submitStudentForm() {
+            console.log("Submitting form via AJAX");
+            
+            // Get form data
+            const form = document.getElementById('addStudentForm');
+            const formData = new FormData(form);
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...';
+            submitBtn.disabled = true;
+            
+            // Submit via fetch
+            fetch('Students/process_add_student.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log("Got response");
+                return response.json();
+            })
+            .then(data => {
+                console.log("Parsed JSON:", data);
+                
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                if (data.success) {
+                    // Show success message
+                    alert("✅ Student added successfully!\n\nStudent ID: " + data.student_id + "\nPassword: " + data.password);
+                    
+                    // Reset form
+                    form.reset();
+                    
+                    // Focus on first field
+                    document.getElementById('student_name').focus();
+                } else {
+                    // Show error
+                    alert("❌ Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                alert("❌ Network error: " + error.message);
+            });
+        }
     </script>
-    <script>
-// Auto-focus on first field
-document.addEventListener('DOMContentLoaded', function() {
-    const successAlert = document.querySelector('.alert-success');
-    if (successAlert) {
-        // If form was successfully submitted, reset the form
-        document.getElementById('addStudentForm').reset();
-        // Focus on first field for next entry
-        document.getElementById('student_name').focus();
-    }
-    
-    // Handle "Add Another" button (same as above but for manual click)
-    document.querySelector('[onclick*="refreshAddStudentFrame"]')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('addStudentForm').reset();
-        document.getElementById('student_name').focus();
-    });
-});
-</script>
 </body>
 </html>
