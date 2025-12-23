@@ -29,6 +29,26 @@ $stmt->execute();
 $result = $stmt->get_result();
 $student = $result->fetch_assoc();
 
+//  DATE VALIDATION CHECK 
+$created = strtotime($student['created_at']);
+$updated = strtotime($student['updated_at']);
+$now = time();
+
+$date_warnings = [];
+
+if ($updated < $created) {
+    $date_warnings[] = "⚠️ Last update date is earlier than join date!";
+}
+
+if ($updated > $now) {
+    $date_warnings[] = "⚠️ Last update date is in the future!";
+}
+
+if ($created > $now) {
+    $date_warnings[] = "⚠️ Join date is in the future!";
+}
+// END OF DATE VALIDATION so basically time travel lai prevent garyo :)
+
 // Format dates nicely
 $created_date = date("F j, Y", strtotime($student['created_at']));
 $updated_date = date("F j, Y, g:i a", strtotime($student['updated_at']));
@@ -48,6 +68,19 @@ $updated_date = date("F j, Y, g:i a", strtotime($student['updated_at']));
             <?php echo ($student['is_active'] == 1) ? 'Active' : 'Inactive'; ?>
         </span>
     </div>
+
+    <!-- DATE VALIDATION WARNINGS -->
+    <?php if (!empty($date_warnings)): ?>
+    <div class="alert alert-warning alert-dismissible fade show mb-4">
+        <h5><i class="bi bi-exclamation-triangle me-2"></i>Data Integrity Alert</h5>
+        <ul class="mb-0">
+            <?php foreach ($date_warnings as $warning): ?>
+                <li><?php echo $warning; ?></li>
+            <?php endforeach; ?>
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
 
     <!-- Student Basic Info Card -->
     <div class="card border-0 shadow-sm mb-4">
