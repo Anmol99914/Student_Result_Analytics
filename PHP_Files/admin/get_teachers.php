@@ -9,7 +9,21 @@ if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true
     exit();
 }
 
-$query = "SELECT teacher_id, name, email, status FROM teacher ORDER BY name ASC";
+// Modified query to include class count
+$query = "
+    SELECT 
+        t.teacher_id, 
+        t.name, 
+        t.email, 
+        t.status,
+        t.created_at,
+        COUNT(c.class_id) as class_count
+    FROM teacher t
+    LEFT JOIN class c ON t.teacher_id = c.teacher_id
+    GROUP BY t.teacher_id
+    ORDER BY t.name ASC
+";
+
 $result = $connection->query($query);
 
 $teachers = [];
