@@ -174,15 +174,15 @@ if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] != true)
     
     <!-- Teachers -->
     <li class="nav-item mb-2">
-      <a href="#" onclick="loadTeacherManagement(); return false;" class="nav-link text-white">
-        <i class="bi bi-person-square"></i> Teachers
+      <a href="teacher_list.php" class="nav-link text-white">
+          <i class="bi bi-person-square"></i> Teachers
       </a>
     </li>
     
     <!-- Students -->
     <li class="nav-item mb-2">
-      <a href="#" onclick="showManageStudents(); return false;" class="nav-link text-white">
-        <i class="bi bi-people"></i> Students
+      <a href="students_list.php" class="nav-link text-white">
+          <i class="bi bi-people"></i> Students
       </a>
     </li>
     
@@ -296,40 +296,45 @@ function setupAjaxLinks() {
 
 // Function to load teacher management
 function loadTeacherManagement() {
-  const mainContent = document.getElementById('main-content');
-  
-  // Clean up any existing modal remnants FIRST
-  cleanupModalBackdrops();
-  
-  // Update active link
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  const teacherLink = document.querySelector('a[href="#"][onclick*="loadTeacherManagement"]');
-  if (teacherLink) teacherLink.classList.add('active');
-  
-  // Show loading
-  mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading Teacher Management...</p></div>';
-  
-  // Close mobile offcanvas if open
-  const offcanvas = document.getElementById('offcanvasSidebar');
-  if (offcanvas) {
-    const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
-    if (bsOffcanvas) bsOffcanvas.hide();
-  }
-  
-  // Load teacher management content WITHOUT action parameter
-  fetch('admin_teachers_content.php')
-    .then(response => response.text())
-    .then(html => {
-      mainContent.innerHTML = html;
-      
-      // Initialize teacher management functionality
-      initTeacherManagementFunctionality();
-    })
-    .catch(error => {
-      console.error('Error loading teacher management:', error);
-      mainContent.innerHTML = '<div class="alert alert-danger">Error loading teacher management. Please try again.</div>';
-    });
+    // Redirect to standalone teacher management page
+    window.location.href = 'teacher_list.php';
 }
+// function loadTeacherManagement() {
+//   const mainContent = document.getElementById('main-content');
+  
+//   // Clean up any existing modal remnants FIRST
+//   cleanupModalBackdrops();
+  
+//   // Update active link
+//   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+//   const teacherLink = document.querySelector('a[href="#"][onclick*="loadTeacherManagement"]');
+//   if (teacherLink) teacherLink.classList.add('active');
+  
+//   // Show loading
+//   mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading Teacher Management...</p></div>';
+  
+//   // Close mobile offcanvas if open
+//   const offcanvas = document.getElementById('offcanvasSidebar');
+//   if (offcanvas) {
+//     const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
+//     if (bsOffcanvas) bsOffcanvas.hide();
+//   }
+  
+//   // Load teacher management content WITHOUT action parameter
+//   fetch('admin_teachers_content.php')
+//     .then(response => response.text())
+//     .then(html => {
+//       mainContent.innerHTML = html;
+      
+//       // Initialize teacher management functionality
+//       initTeacherManagementFunctionality();
+//     })
+//     .catch(error => {
+//       console.error('Error loading teacher management:', error);
+//       mainContent.innerHTML = '<div class="alert alert-danger">Error loading teacher management. Please try again.</div>';
+//     });
+// }
+
 
 // Initialize teacher management functionality
 function initTeacherManagementFunctionality() {
