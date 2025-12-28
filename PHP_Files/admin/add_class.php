@@ -1,83 +1,50 @@
 <?php
+// add_class.php
 session_start();
-include("../../config.php");
+include('../../config.php');
 
-header('Content-Type: application/json');
-
-if(!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true){
-    echo json_encode(['status'=>'error','message'=>'Unauthorized access']);
-    exit();
-}
-
-if($_SERVER['REQUEST_METHOD'] === 'POST'){
-    $faculty = trim($_POST['faculty'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $faculty = $_POST['faculty'] ?? '';
     $semester = intval($_POST['semester'] ?? 0);
-    $teacher_id = intval($_POST['teacher_id'] ?? 0);
-
-    // Validation - all fields are required
-    if($faculty === '' || $semester <= 0 || $teacher_id <= 0){
-        echo json_encode(['status'=>'error','message'=>'All fields are required: Faculty, Semester, and Teacher']);
-        exit();
-    }
-
-    // Verify teacher is active
-    $stmtCheck = $connection->prepare("SELECT name, status FROM teacher WHERE teacher_id=? LIMIT 1");
-    $stmtCheck->bind_param("i", $teacher_id);
-    $stmtCheck->execute();
-    $stmtCheck->bind_result($teacherName, $teacherStatus);
-    $stmtCheck->fetch();
-    $stmtCheck->close();
-
-    if(empty($teacherName)){
-        echo json_encode(['status'=>'error','message'=>'Selected teacher not found']);
-        exit();
+    $batch_year = $_POST['batch_year'] ?? date('Y');
+    $status = $_POST['status'] ?? 'active';
+    
+    if (empty($faculty) || $semester <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid faculty or semester']);
+        exit;
     }
     
-    if(strtolower(trim($teacherStatus)) !== 'active'){
+    // Check if class already exists
+    $check_query = "SELECT class_id FROM class 
+                    WHERE faculty = ? AND semester = ? AND batch_year = ?";
+    $check_stmt = $connection->prepare($check_query);
+    $check_stmt->bind_param("sis", $faculty, $semester, $batch_year);
+    $check_stmt->execute();
+    
+    if ($check_stmt->get_result()->num_rows > 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Class already exists']);
+        exit;
+    }
+    
+    // Insert new class
+    $insert_query = "INSERT INTO class (faculty, semester, batch_year, status) 
+                     VALUES (?, ?, ?, ?)";
+    $insert_stmt = $connection->prepare($insert_query);
+    $insert_stmt->bind_param("siss", $faculty, $semester, $batch_year, $status);
+    
+    if ($insert_stmt->execute()) {
+        $class_id = $connection->insert_id;
         echo json_encode([
-            'status' => 'error',
-            'message' => 'Cannot assign suspended teacher. Please select an active teacher.'
+            'status' => 'success', 
+            'message' => 'Class created successfully!',
+            'class_id' => $class_id,
+            'faculty' => $faculty,
+            'semester' => $semester
         ]);
-        exit();
-    }
-
-    // Check for duplicate class (same faculty, semester, and teacher)
-    $stmtDup = $connection->prepare("SELECT class_id FROM class WHERE faculty=? AND semester=? AND teacher_id=? LIMIT 1");
-    $stmtDup->bind_param("sii", $faculty, $semester, $teacher_id);
-    $stmtDup->execute();
-    $stmtDup->store_result();
-
-    if($stmtDup->num_rows > 0){
-        echo json_encode(['status'=>'error','message'=>'This class already exists with the same teacher']);
     } else {
-        // Insert new class
-        $stmt = $connection->prepare("INSERT INTO class (faculty, semester, teacher_id, status) VALUES (?, ?, ?, 'active')");
-        $stmt->bind_param("sii", $faculty, $semester, $teacher_id);
-        
-        if($stmt->execute()){
-            $class_id = $stmt->insert_id;
-            
-            // Update teacher's assigned class
-            $updateTeacher = $connection->prepare("UPDATE teacher SET assigned_class_id = ? WHERE teacher_id = ?");
-            $updateTeacher->bind_param("ii", $class_id, $teacher_id);
-            $updateTeacher->execute();
-            $updateTeacher->close();
-            
-            echo json_encode([
-                'status' => 'success',
-                'message' => 'Class created successfully with teacher assigned!',
-                'teacher_assigned' => true,
-                'teacher_name' => $teacherName,
-                'class_id' => $class_id
-            ]);
-        } else {
-            echo json_encode(['status'=>'error','message'=>'Database error: ' . $connection->error]);
-        }
-        $stmt->close();
+        echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $connection->error]);
     }
-    $stmtDup->close();
-    exit();
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
 }
-
-echo json_encode(['status'=>'error','message'=>'Invalid request']);
 ?>

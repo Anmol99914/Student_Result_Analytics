@@ -1,0 +1,504 @@
+// class-management.js - Class management JavaScript
+
+// Check if already loaded to prevent duplicate declaration
+if (typeof window.ClassManager !== 'undefined') {
+    console.log('ClassManager already loaded, reinitializing...');
+    if (window.classManager && typeof window.classManager.init === 'function') {
+        window.classManager.init();
+    }
+} else {
+    console.log('Loading ClassManager for the first time...');
+    
+    // Define the class
+    class ClassManager {
+        constructor() {
+            console.log('ClassManager constructor called');
+            this.init();
+        }
+        
+        init() {
+            console.log('ClassManager.init() called');
+            this.loadClasses();
+            this.setupEventListeners();
+        }
+        
+        setupEventListeners() {
+            console.log('Setting up event listeners...');
+            
+            // Filter event listeners
+            const facultyFilter = document.getElementById('facultyFilter');
+            const semesterFilter = document.getElementById('semesterFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            
+            if (facultyFilter) {
+                facultyFilter.addEventListener('change', () => this.filterClasses());
+            }
+            
+            if (semesterFilter) {
+                semesterFilter.addEventListener('change', () => this.filterClasses());
+            }
+            
+            if (statusFilter) {
+                statusFilter.addEventListener('change', () => this.filterClasses());
+            }
+            
+            // Reset filter button
+            const resetBtn = document.getElementById('resetFiltersBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.resetClassFilters();
+                });
+            }
+            
+            // Add class button
+            const addClassBtn = document.getElementById('addClassBtn');
+            if (addClassBtn) {
+                addClassBtn.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent any default action
+                    e.stopPropagation();
+                    this.showAddClassForm();
+                });
+            }
+            
+            console.log('Event listeners setup complete');
+        }
+        
+        loadClasses() {
+            console.log('Loading classes...');
+            const container = document.getElementById('classes-container');
+            
+            if (!container) {
+                console.error('Classes container not found!');
+                return;
+            }
+            
+            // Show loading
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading classes...</p>
+                </div>
+            `;
+            
+            // Get filter values
+            const faculty = document.getElementById('facultyFilter')?.value || '';
+            const semester = document.getElementById('semesterFilter')?.value || '';
+            const status = document.getElementById('statusFilter')?.value || '';
+            
+            // Build query string
+            let url = 'get_classes.php';
+            const params = new URLSearchParams();
+            
+            if (faculty) params.append('faculty', faculty);
+            if (semester) params.append('semester', semester);
+            if (status) params.append('status', status);
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+            
+            console.log('Fetching from:', url);
+            
+            // Load via AJAX
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(classes => {
+                    console.log('Classes loaded:', classes ? classes.length : 0);
+                    this.renderClassesTable(classes);
+                })
+                .catch(error => {
+                    console.error('Error loading classes:', error);
+                    container.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Error loading classes: ${error.message}
+                            <button onclick="window.classManager.loadClasses()" class="btn btn-sm btn-danger ms-2">Retry</button>
+                        </div>
+                    `;
+                });
+        }
+        
+        renderClassesTable(classes) {
+            const container = document.getElementById('classes-container');
+            
+            if (!container) {
+                console.error('Container not found for rendering');
+                return;
+            }
+            
+            if (!classes || classes.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle"></i> 
+                        No classes found. 
+                        <button class="btn btn-link alert-link" onclick="window.classManager.showAddClassForm()">
+                            Create your first class!
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Class ID</th>
+                                <th>Faculty</th>
+                                <th>Semester</th>
+                                <th>Batch Year</th>
+                                <th>Status</th>
+                                <th>Students</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            classes.forEach(cls => {
+                const statusBadge = cls.status === 'active' 
+                    ? '<span class="badge bg-success">Active</span>' 
+                    : '<span class="badge bg-secondary">Inactive</span>';
+                
+                const studentCount = cls.student_count || 0;
+                
+                html += `
+                    <tr data-faculty="${cls.faculty}" data-semester="${cls.semester}" data-status="${cls.status}">
+                        <td><strong>${cls.class_id}</strong></td>
+                        <td>
+                            <span class="badge bg-primary">${cls.faculty}</span>
+                            <br><small>${cls.faculty_name || ''}</small>
+                        </td>
+                        <td>Semester ${cls.semester}</td>
+                        <td>${cls.batch_year}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            ${studentCount} students
+                            <br>
+                            <a href="#" onclick="window.classManager.viewClassStudents(${cls.class_id})" class="small">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                        <td>${new Date(cls.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="assign_teachers.php?class_id=${cls.class_id}" 
+                                   class="btn btn-outline-primary" title="Assign Teachers">
+                                    <i class="bi bi-person-plus"></i>
+                                </a>
+                                <button class="btn btn-outline-info" onclick="window.classManager.viewClassDetails(${cls.class_id})" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="window.classManager.toggleClassStatus(${cls.class_id}, '${cls.status}')" 
+                                        title="${cls.status === 'active' ? 'Deactivate' : 'Activate'}">
+                                    <i class="bi bi-power"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            </div>
+            `;
+            
+            container.innerHTML = html;
+            console.log('Classes table rendered with', classes.length, 'rows');
+        }
+        
+        filterClasses() {
+            console.log('Filtering classes...');
+            // Get filter values
+            const faculty = document.getElementById('facultyFilter')?.value || '';
+            const semester = document.getElementById('semesterFilter')?.value || '';
+            const status = document.getElementById('statusFilter')?.value || '';
+            
+            const rows = document.querySelectorAll('#classes-container tbody tr');
+            console.log('Found', rows.length, 'rows to filter');
+            
+            rows.forEach(row => {
+                const rowFaculty = row.getAttribute('data-faculty');
+                const rowSemester = row.getAttribute('data-semester');
+                const rowStatus = row.getAttribute('data-status');
+                
+                let show = true;
+                
+                if (faculty && rowFaculty !== faculty) show = false;
+                if (semester && rowSemester !== semester) show = false;
+                if (status && rowStatus !== status) show = false;
+                
+                row.style.display = show ? '' : 'none';
+            });
+        }
+        
+        resetClassFilters() {
+            console.log('Resetting filters...');
+            const facultyFilter = document.getElementById('facultyFilter');
+            const semesterFilter = document.getElementById('semesterFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            
+            if (facultyFilter) facultyFilter.value = '';
+            if (semesterFilter) semesterFilter.value = '';
+            if (statusFilter) statusFilter.value = '';
+            
+            this.loadClasses();
+        }
+        
+        showAddClassForm() {
+            console.log('Showing add class form...');
+            
+            // Create a modal for adding class
+            this.showAddClassModal();
+        }
+        
+        showAddClassModal() {
+            console.log('Creating add class modal...');
+            
+            // Remove existing modal if any
+            const existingModal = document.getElementById('addClassModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Create modal HTML
+            const modalHTML = `
+                <div class="modal fade" id="addClassModal" tabindex="-1" aria-labelledby="addClassModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title" id="addClassModalLabel">
+                                    <i class="bi bi-plus-circle me-2"></i>Create New Class
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addClassForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Faculty <span class="text-danger">*</span></label>
+                                        <select name="faculty" class="form-select" required>
+                                            <option value="">-- Select Faculty --</option>
+                                            <option value="BCA">BCA</option>
+                                            <option value="BBM">BBM</option>
+                                            <option value="BIM">BIM</option>
+                                            <option value="BBA">BBA</option>
+                                            <option value="BIT">BIT</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Semester <span class="text-danger">*</span></label>
+                                        <select name="semester" class="form-select" required>
+                                            <option value="">-- Select Semester --</option>
+                                            <option value="1">Semester 1</option>
+                                            <option value="2">Semester 2</option>
+                                            <option value="3">Semester 3</option>
+                                            <option value="4">Semester 4</option>
+                                            <option value="5">Semester 5</option>
+                                            <option value="6">Semester 6</option>
+                                            <option value="7">Semester 7</option>
+                                            <option value="8">Semester 8</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Batch Year</label>
+                                        <input type="number" name="batch_year" class="form-control" 
+                                               value="2025" min="2020" max="2030">
+                                        <small class="text-muted">Default is current year (2025)</small>
+                                    </div>
+                                    
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Note:</strong> Teacher assignments are now done separately 
+                                        through the "Assign Teachers" page for each class.
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="window.classManager.submitAddClassForm()">
+                                    <i class="bi bi-check-circle"></i> Create Class
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Show modal
+            const modalElement = document.getElementById('addClassModal');
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            
+            // Remove modal from DOM when hidden
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                setTimeout(() => {
+                    if (modalElement.parentNode) {
+                        modalElement.remove();
+                    }
+                }, 300);
+            });
+        }
+        
+        submitAddClassForm() {
+            console.log('Submitting add class form...');
+            
+            const form = document.getElementById('addClassForm');
+            if (!form) {
+                console.error('Add class form not found');
+                return;
+            }
+            
+            // Validate form
+            const faculty = form.querySelector('[name="faculty"]').value;
+            const semester = form.querySelector('[name="semester"]').value;
+            
+            if (!faculty || !semester) {
+                showAlert('warning', 'Please select faculty and semester');
+                return;
+            }
+            
+            // Show loading
+            const submitBtn = document.querySelector('[onclick*="submitAddClassForm"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating...';
+            submitBtn.disabled = true;
+            
+            // Prepare form data
+            const formData = new FormData(form);
+            
+            // Add additional data
+            formData.append('action', 'add_class');
+            formData.append('status', 'active');
+            
+            // Submit via AJAX
+            fetch('add_class.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Add class response:', data);
+                
+                if (data.status === 'success') {
+                    showAlert('success', data.message);
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addClassModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Reload classes after 1 second
+                    setTimeout(() => {
+                        this.loadClasses();
+                    }, 1000);
+                    
+                } else {
+                    showAlert('danger', data.message || 'Error creating class');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('danger', 'Network error: ' + error.message);
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+        viewClassDetails(classId) {
+            console.log('Viewing class details:', classId);
+            loadPage(`admin_classes.php?class_id=${classId}`);
+        }
+        
+        viewClassStudents(classId) {
+            console.log('Viewing class students:', classId);
+            loadPage(`students_list.php?class_id=${classId}`);
+        }
+        
+        toggleClassStatus(classId, currentStatus) {
+            console.log('Toggling class status:', classId, currentStatus);
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            const confirmMsg = currentStatus === 'active' 
+                ? 'Are you sure you want to deactivate this class?' 
+                : 'Are you sure you want to activate this class?';
+            
+            if (!confirm(confirmMsg)) return;
+            
+            fetch('update_class_status.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    class_id: classId,
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert('success', data.message);
+                    this.loadClasses(); // Reload classes
+                } else {
+                    showAlert('danger', data.message);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', 'Error updating class status');
+            });
+        }
+    }
+    
+    // Make available globally
+    window.ClassManager = ClassManager;
+}
+
+// Initialize when appropriate
+function initializeClassManager() {
+    console.log('initializeClassManager called');
+    
+    // Check if we're on the class management page
+    const isClassPage = document.querySelector('.class-management-container') !== null;
+    
+    if (isClassPage) {
+        console.log('On class management page, initializing...');
+        
+        if (typeof ClassManager !== 'undefined' && !window.classManager) {
+            console.log('Creating new ClassManager instance');
+            window.classManager = new ClassManager();
+        } else if (window.classManager) {
+            console.log('Reinitializing existing classManager');
+            window.classManager.init();
+        } else {
+            console.error('ClassManager not available');
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initializeClassManager);
+
+// Also initialize when page loads via AJAX
+window.addEventListener('pageLoaded', function(event) {
+    console.log('pageLoaded event:', event.detail.url);
+    if (event.detail.url.includes('class_management.php')) {
+        // Small delay to ensure DOM is ready
+        setTimeout(initializeClassManager, 100);
+    }
+});
