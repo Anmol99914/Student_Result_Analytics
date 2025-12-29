@@ -1,5 +1,5 @@
 <?php
-// get_teacher.php - Get single teacher details
+// get_teacher.php - FIXED CONFIG PATH
 header('Content-Type: application/json');
 
 session_start();
@@ -9,14 +9,29 @@ if (!isset($_SESSION['admin_id'])) {
     exit();
 }
 
-// Load config
-$configPath = dirname(dirname(dirname(__FILE__))) . '/config.php';
-if (!file_exists($configPath)) {
-    echo json_encode(['success' => false, 'error' => 'Config not found']);
-    exit();
+// TRY MULTIPLE PATHS - Same as get_teachers.php
+$possiblePaths = [
+    dirname(dirname(dirname(__FILE__))) . '/config.php', // ../../../config.php
+    $_SERVER['DOCUMENT_ROOT'] . '/Student_Result_Analytics/config.php',
+    'C:/xampp/htdocs/Student_Result_Analytics/config.php'
+];
+
+$configLoaded = false;
+foreach ($possiblePaths as $configPath) {
+    if (file_exists($configPath)) {
+        require_once $configPath;
+        $configLoaded = true;
+        break;
+    }
 }
 
-require_once $configPath;
+if (!$configLoaded) {
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Config not found. Tried: ' . json_encode($possiblePaths)
+    ]);
+    exit();
+}
 
 $teacher_id = intval($_GET['teacher_id'] ?? 0);
 
@@ -49,7 +64,8 @@ $stats = mysqli_fetch_assoc($statsResult);
 echo json_encode([
     'success' => true,
     'teacher' => $teacher,
-    'stats' => $stats
+    'stats' => $stats,
+    'debug' => ['config_loaded' => true]
 ]);
 
 mysqli_close($connection);

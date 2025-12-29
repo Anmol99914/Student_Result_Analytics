@@ -1,5 +1,5 @@
 <?php
-// update_teacher.php - Update teacher details
+// update_teacher.php - FIXED CONFIG PATH
 header('Content-Type: application/json');
 
 session_start();
@@ -9,14 +9,26 @@ if (!isset($_SESSION['admin_id'])) {
     exit();
 }
 
-// Load config
-$configPath = dirname(dirname(dirname(__FILE__))) . '/config.php';
-if (!file_exists($configPath)) {
+// TRY MULTIPLE PATHS - Same as other APIs
+$possiblePaths = [
+    dirname(dirname(dirname(__FILE__))) . '/config.php',
+    $_SERVER['DOCUMENT_ROOT'] . '/Student_Result_Analytics/config.php',
+    'C:/xampp/htdocs/Student_Result_Analytics/config.php'
+];
+
+$configLoaded = false;
+foreach ($possiblePaths as $configPath) {
+    if (file_exists($configPath)) {
+        require_once $configPath;
+        $configLoaded = true;
+        break;
+    }
+}
+
+if (!$configLoaded) {
     echo json_encode(['success' => false, 'error' => 'Config not found']);
     exit();
 }
-
-require_once $configPath;
 
 // Get POST data
 $teacher_id = intval($_POST['teacher_id'] ?? 0);
