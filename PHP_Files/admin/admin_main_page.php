@@ -446,6 +446,27 @@ window.addEventListener('unhandledrejection', function(e) {
     console.error('Unhandled promise rejection:', e.reason);
     showAlert('danger', 'Async Error: ' + e.reason.message);
 });
+
+// In admin_main_page.php, around line 480-510 where it loads scripts
+function loadScriptOnce(src) {
+    // Check if script already loaded
+    const existing = document.querySelector(`script[src*="${src}"]`);
+    if (existing) {
+        console.log('Script already loaded:', src);
+        return Promise.resolve();
+    }
+    
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+// Then use it instead of directly appending scripts
+// loadScriptOnce('js/admin/teacher-management.js');
 </script>
 
 <!-- Load page-specific JS -->

@@ -1,382 +1,411 @@
-// teacher-management.js - Teacher management JavaScript
-
-// Check if already loaded to prevent duplicate declaration
-if (typeof window.TeacherManager !== 'undefined') {
-    console.log('TeacherManager already loaded, reinitializing...');
-    if (window.teacherManager && typeof window.teacherManager.init === 'function') {
-        window.teacherManager.init();
-    }
-} else {
-    console.log('Loading TeacherManager for the first time...');
+// teacher-management.js - PROPERLY FORMATTED VERSION
+(function() {
+    'use strict';
     
-    // Define the class
-    class TeacherManager {
-        constructor() {
-            console.log('TeacherManager constructor called');
-            this.currentTab = 'active';
-            this.init();
+    console.log('Teacher Management module loading...');
+    
+    // Configuration
+    const CONFIG = {
+        apiUrl: '../admin/api/get_teachers.php',
+        containerId: 'teachers-container'
+    };
+    
+    // Check if already initialized
+    if (window.teacherManager) {
+        console.log('teacherManager already exists');
+        if (typeof window.teacherManager.init === 'function') {
+            window.teacherManager.init();
         }
+        return;
+    }
+    
+    // Teacher Manager
+    const TeacherManager = {
+        currentTab: 'active',
         
-        init() {
+        init: function() {
             console.log('TeacherManager.init() called');
-            this.loadTeacherTab('active');
-            this.setupEventListeners();
-        }
-        
-        setupEventListeners() {
-            console.log('Setting up teacher event listeners...');
             
-            // Tab change events
-            document.querySelectorAll('#teacherTabs button').forEach(tab => {
-                tab.addEventListener('shown.bs.tab', (event) => {
-                    const tabId = event.target.id.replace('-tab', '');
-                    this.currentTab = tabId;
-                    this.loadTeacherTab(tabId);
-                });
-            });
-            
-            // Add teacher button
-            const addTeacherBtn = document.getElementById('addTeacherBtn');
-            if (addTeacherBtn) {
-                addTeacherBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.showAddTeacherForm();
-                });
-            }
-            
-            console.log('Teacher event listeners setup complete');
-        }
-        
-        loadTeacherTab(tab, page = 1) {
-            console.log(`Loading teacher tab: ${tab}, page: ${page}`);
-            const containerId = `${tab}-teachers-container`;
-            const container = document.getElementById(containerId);
-            
-            if (!container) {
-                console.error(`Container ${containerId} not found!`);
+            if (!this.validateEnvironment()) {
                 return;
             }
+            
+            this.renderUI();
+            this.loadTeachers();
+        },
+        
+        validateEnvironment: function() {
+            const container = document.getElementById(CONFIG.containerId);
+            if (!container) {
+                console.error('Container not found:', CONFIG.containerId);
+                return false;
+            }
+            return true;
+        },
+        
+        renderUI: function() {
+            const container = document.getElementById(CONFIG.containerId);
+            
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-people"></i> Teacher Management
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Tabs -->
+                        <div class="btn-group mb-4" role="group">
+                            <button type="button" class="btn btn-primary active" data-tab="active">
+                                Active Teachers
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" data-tab="inactive">
+                                Inactive Teachers
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" data-tab="all">
+                                All Teachers
+                            </button>
+                        </div>
+                        
+                        <!-- Table Container -->
+                        <div id="teachers-table-container">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary"></div>
+                                <p class="mt-2">Loading teachers...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add tab event listeners
+            this.setupTabs();
+        },
+        
+        setupTabs: function() {
+            document.querySelector('.btn-group').addEventListener('click', (e) => {
+                const tabBtn = e.target.closest('[data-tab]');
+                if (tabBtn) {
+                    this.switchTab(tabBtn.dataset.tab);
+                }
+            });
+        },
+        
+        switchTab: function(tabName) {
+            console.log('Switching to tab:', tabName);
+            this.currentTab = tabName;
+            
+            // Update UI
+            document.querySelectorAll('[data-tab]').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-primary', 'active');
+                } else {
+                    btn.classList.remove('btn-primary', 'active');
+                    btn.classList.add('btn-outline-primary');
+                }
+            });
+            
+            this.loadTeachers();
+        },
+        
+        async loadTeachers() {
+            const container = document.getElementById('teachers-table-container');
+            if (!container) return;
             
             // Show loading
             container.innerHTML = `
                 <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2">Loading teachers...</p>
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Loading ${this.currentTab} teachers...</p>
                 </div>
             `;
             
-            // Load via AJAX
-            fetch(`admin_teachers_table.php?tab=${tab}&page=${page}`)
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return response.text();
-                })
-                .then(html => {
-                    container.innerHTML = html;
-                    this.initTeacherTableEvents(tab);
-                    console.log(`Teacher tab ${tab} loaded successfully`);
-                })
-                .catch(error => {
-                    console.error(`Error loading teacher tab ${tab}:`, error);
-                    container.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle"></i> 
-                            Error loading teachers. Please try again.
-                        </div>
-                    `;
-                });
-        }
+            try {
+                const url = `${CONFIG.apiUrl}?status=${this.currentTab}`;
+                console.log('Fetching from:', url);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+                
+                if (data.success) {
+                    this.displayTeachers(data.teachers || []);
+                } else {
+                    throw new Error(data.error || 'API error');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                this.showError(error.message);
+            }
+        },
         
-        initTeacherTableEvents(tab) {
-            console.log(`Initializing events for ${tab} teachers table`);
-            const container = document.getElementById(`${tab}-teachers-container`);
+        displayTeachers: function(teachers) {
+            const container = document.getElementById('teachers-table-container');
             
-            if (!container) {
-                console.error(`Container for ${tab} not found`);
+            if (!teachers || teachers.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No teachers found.
+                    </div>
+                `;
                 return;
             }
             
-            // Edit button events
-            container.querySelectorAll('.edit-teacher-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const teacherId = btn.getAttribute('data-teacher-id');
-                    this.showEditTeacherModal(teacherId);
-                });
-            });
+            let html = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="mb-0">Teachers (${teachers.length})</h5>
+                        <small class="text-muted">Showing ${this.currentTab} teachers</small>
+                    </div>
+                    <button class="btn btn-success" id="addTeacherBtn">
+                        <i class="bi bi-person-plus"></i> Add Teacher
+                    </button>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
             
-            // Status toggle events
-            container.querySelectorAll('.deactivate-btn, .reactivate-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const teacherId = btn.getAttribute('data-teacher-id') || 
-                                     btn.getAttribute('href')?.split('=')[1];
-                    if (!teacherId) {
-                        console.error('Could not find teacher ID from button:', btn);
-                        return;
-                    }
+            teachers.forEach(teacher => {
+                const created = teacher.created_at 
+                    ? new Date(teacher.created_at).toLocaleDateString() 
+                    : 'N/A';
                     
-                    const action = btn.classList.contains('deactivate-btn') ? 'deactivate' : 'activate';
-                    this.toggleTeacherStatus(teacherId, action);
-                });
+                html += `
+                    <tr>
+                        <td><strong>#${teacher.teacher_id}</strong></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-placeholder bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 36px; height: 36px;">
+                                    ${teacher.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <strong>${teacher.name}</strong>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${teacher.email}</td>
+                        <td>
+                            <span class="badge ${teacher.status === 'active' ? 'bg-success' : 'bg-secondary'}">
+                                ${teacher.status}
+                            </span>
+                        </td>
+                        <td><small class="text-muted">${created}</small></td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary" title="Edit" 
+                                        onclick="window.teacherManager.editTeacher(${teacher.teacher_id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-info" title="View Details"
+                                        onclick="window.teacherManager.viewTeacher(${teacher.teacher_id})">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" title="${teacher.status === 'active' ? 'Deactivate' : 'Activate'}"
+                                        onclick="window.teacherManager.toggleStatus(${teacher.teacher_id}, '${teacher.status}')">
+                                    <i class="bi bi-power"></i>
+                                </button>
+                                <a href="assign_teachers.php?teacher_id=${teacher.teacher_id}" 
+                                   class="btn btn-outline-success" title="Assign Subjects">
+                                    <i class="bi bi-book"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
             });
             
-            // Pagination events
-            container.querySelectorAll('.page-link').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const href = link.getAttribute('href');
-                    if (href && href !== '#') {
-                        const url = new URL(href, window.location.origin);
-                        const page = url.searchParams.get('page') || 1;
-                        this.loadTeacherTab(this.currentTab, page);
-                    }
-                });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+            
+            // Add event listener for add button
+            document.getElementById('addTeacherBtn').addEventListener('click', () => {
+                this.showAddTeacherForm();
             });
-        }
+        },
         
-        showAddTeacherForm() {
-            console.log('Showing add teacher form...');
+        showError: function(message) {
+            const container = document.getElementById('teachers-table-container');
             
-            // Create a modal for adding teacher
-            this.showAddTeacherModal();
-        }
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Error</h5>
+                    <p>${message}</p>
+                    <button class="btn btn-sm btn-danger" onclick="window.teacherManager.loadTeachers()">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        },
         
-        showAddTeacherModal() {
-            console.log('Creating add teacher modal...');
-            
-            // Remove existing modal if any
-            const existingModal = document.getElementById('addTeacherModal');
-            if (existingModal) {
-                existingModal.remove();
-            }
-            
+        showAddTeacherForm: function() {
             // Create modal HTML
             const modalHTML = `
-                <div class="modal fade" id="addTeacherModal" tabindex="-1" aria-labelledby="addTeacherModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-lg">
+                <div class="modal fade" id="addTeacherModal" tabindex="-1">
+                    <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title" id="addTeacherModalLabel">
-                                    <i class="bi bi-person-plus me-2"></i>Add New Teacher
+                                <h5 class="modal-title">
+                                    <i class="bi bi-person-plus"></i> Add New Teacher
                                 </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
-                                <div id="add-teacher-loading" class="text-center py-4">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
+                                <form id="addTeacherForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Full Name *</label>
+                                        <input type="text" class="form-control" name="name" required>
                                     </div>
-                                    <p class="mt-2">Loading form...</p>
-                                </div>
-                                <div id="add-teacher-form" style="display: none;">
-                                    <!-- Form will be loaded via AJAX -->
-                                </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Email Address *</label>
+                                        <input type="email" class="form-control" name="email" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Password *</label>
+                                        <input type="password" class="form-control" name="password" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select" name="status">
+                                            <option value="active" selected>Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="submitAddTeacher">Add Teacher</button>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
             
-            // Add modal to body
+            // Add modal to page
             document.body.insertAdjacentHTML('beforeend', modalHTML);
             
-            // Load form via AJAX
-            this.loadAddTeacherForm();
-            
             // Show modal
-            const modalElement = document.getElementById('addTeacherModal');
-            const modal = new bootstrap.Modal(modalElement);
+            const modal = new bootstrap.Modal(document.getElementById('addTeacherModal'));
             modal.show();
             
-            // Remove modal from DOM when hidden
-            modalElement.addEventListener('hidden.bs.modal', function() {
-                setTimeout(() => {
-                    if (modalElement.parentNode) {
-                        modalElement.remove();
-                    }
-                }, 300);
+            // Handle form submission
+            document.getElementById('submitAddTeacher').addEventListener('click', () => {
+                this.submitAddTeacherForm();
             });
-        }
-        
-        loadAddTeacherForm() {
-            console.log('Loading add teacher form...');
-            const formContainer = document.getElementById('add-teacher-form');
-            const loadingContainer = document.getElementById('add-teacher-loading');
             
-            if (!formContainer || !loadingContainer) {
-                console.error('Form containers not found');
-                return;
-            }
-            
-            fetch('add_teacher_content.php')
-                .then(response => response.text())
-                .then(html => {
-                    loadingContainer.style.display = 'none';
-                    formContainer.style.display = 'block';
-                    formContainer.innerHTML = html;
-                    
-                    // Initialize form submission
-                    this.setupAddTeacherForm();
-                })
-                .catch(error => {
-                    console.error('Error loading teacher form:', error);
-                    loadingContainer.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle"></i> 
-                            Error loading form: ${error.message}
-                        </div>
-                    `;
-                });
-        }
+            // Remove modal when hidden
+            document.getElementById('addTeacherModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        },
         
-        setupAddTeacherForm() {
+        submitAddTeacherForm: async function() {
             const form = document.getElementById('addTeacherForm');
-            if (!form) {
-                console.error('Add teacher form not found in loaded content');
-                return;
-            }
-            
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.submitAddTeacherForm(form);
-            });
-            
-            console.log('Add teacher form setup complete');
-        }
-        
-        submitAddTeacherForm(form) {
-            console.log('Submitting add teacher form...');
-            
             const formData = new FormData(form);
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
             
             // Show loading
+            const submitBtn = document.getElementById('submitAddTeacher');
+            const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Adding...';
             submitBtn.disabled = true;
             
-            // Submit via AJAX
-            fetch('admin_add_teacher.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Add teacher response:', data);
+            try {
+                const response = await fetch('../admin/api/add_teacher.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
                 
                 if (data.success) {
-                    showAlert('success', data.message || 'Teacher added successfully');
-                    
+                    alert('Teacher added successfully!');
                     // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addTeacherModal'));
-                    if (modal) {
-                        modal.hide();
-                    }
-                    
-                    // Reload teachers after 1 second
-                    setTimeout(() => {
-                        this.loadTeacherTab(this.currentTab);
-                    }, 1000);
-                    
+                    bootstrap.Modal.getInstance(document.getElementById('addTeacherModal')).hide();
+                    // Refresh list
+                    this.loadTeachers();
                 } else {
-                    showAlert('danger', data.message || 'Error adding teacher');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
+                    alert('Error: ' + data.error);
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showAlert('danger', 'Network error: ' + error.message);
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                // Reset button
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
-            });
-        }
+            }
+        },
         
-        showEditTeacherModal(teacherId) {
-            console.log('Showing edit modal for teacher:', teacherId);
-            
-            // For now, just load the edit page
-            // You can create a modal similar to add teacher if needed
-            loadPage(`edit_teacher_content.php?teacher_id=${teacherId}`);
-        }
+        editTeacher: function(teacherId) {
+            alert('Edit teacher #' + teacherId + ' - To be implemented');
+            // Similar to add but with pre-filled data
+        },
         
-        toggleTeacherStatus(teacherId, action) {
-            console.log(`Toggling teacher status: ${teacherId}, ${action}`);
+        viewTeacher: function(teacherId) {
+            alert('View teacher details #' + teacherId + ' - To be implemented');
+            // Show modal with teacher details, assignments, etc.
+        },
+        
+        toggleStatus: async function(teacherId, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            const action = currentStatus === 'active' ? 'deactivate' : 'activate';
             
-            const confirmMsg = action === 'deactivate' 
-                ? 'Are you sure you want to deactivate this teacher?' 
-                : 'Are you sure you want to activate this teacher?';
-            
-            if (!confirm(confirmMsg)) return;
-            
-            // Show loading in the button if possible
-            const button = event?.target || document.querySelector(`[data-teacher-id="${teacherId}"]`);
-            if (button) {
-                const originalText = button.innerHTML;
-                button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-                button.disabled = true;
-                
-                // Restore button after 2 seconds even if error
-                setTimeout(() => {
-                    button.innerHTML = originalText;
-                    button.disabled = false;
-                }, 2000);
+            if (!confirm(`Are you sure you want to ${action} this teacher?`)) {
+                return;
             }
             
-            fetch(`toggle_teacher_status.php?teacher_id=${teacherId}&action=${action}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showAlert('success', data.message);
-                        this.loadTeacherTab(this.currentTab);
-                    } else {
-                        showAlert('danger', data.message);
-                    }
-                })
-                .catch(error => {
-                    showAlert('danger', 'Error updating teacher status');
+            try {
+                const response = await fetch('../admin/api/update_teacher_status.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `teacher_id=${teacherId}&status=${newStatus}`
                 });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Teacher ${action}d successfully!`);
+                    this.loadTeachers(); // Refresh list
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
         }
-    }
-    
-    // Make available globally
-    window.TeacherManager = TeacherManager;
-}
 
-// Initialize when appropriate
-function initializeTeacherManager() {
-    console.log('initializeTeacherManager called');
-    
-    // Check if we're on the teacher management page
-    const isTeacherPage = document.querySelector('.teacher-management-container') !== null;
-    
-    if (isTeacherPage) {
-        console.log('On teacher management page, initializing...');
         
-        if (typeof TeacherManager !== 'undefined' && !window.teacherManager) {
-            console.log('Creating new TeacherManager instance');
-            window.teacherManager = new TeacherManager();
-        } else if (window.teacherManager) {
-            console.log('Reinitializing existing teacherManager');
-            window.teacherManager.init();
-        } else {
-            console.error('TeacherManager not available');
-        }
+    };
+    
+    // Export to window
+    window.teacherManager = TeacherManager;
+    
+    console.log('TeacherManager module loaded');
+    
+    // Auto-initialize if container exists
+    if (document.getElementById('teachers-container')) {
+        console.log('Auto-initializing...');
+        setTimeout(() => TeacherManager.init(), 100);
     }
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', initializeTeacherManager);
-
-// Also initialize when page loads via AJAX
-window.addEventListener('pageLoaded', function(event) {
-    console.log('pageLoaded event:', event.detail.url);
-    if (event.detail.url.includes('teacher_management.php')) {
-        // Small delay to ensure DOM is ready
-        setTimeout(initializeTeacherManager, 100);
-    }
-});
+})();
