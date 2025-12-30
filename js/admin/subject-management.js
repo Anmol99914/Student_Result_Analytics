@@ -1,543 +1,609 @@
 // File: js/admin/subject-management.js
-// Purpose: Subject Management JavaScript - SIMPLIFIED WORKING VERSION
 
+// Add at the VERY TOP of your file
+console.log('=== SCRIPT LOAD ORDER ===');
+console.log('Current script loaded');
 
-
-// Check if already loaded
-if (window.subjectManagerLoaded) {
-    console.log('SubjectManager already loaded');
-} else {
-    window.subjectManagerLoaded = true;
+$(document).ready(function() {
+    console.log('Subject Manager - Fixed Paths Loaded');
     
+    // Configuration
+    let currentPage = 1;
+    let itemsPerPage = 10;
+    let currentFaculty = '';
+    let currentSemester = '';
+    let currentStatus = '1';
+    let searchQuery = '';
     
-    const SubjectManager = {
-        // Configuration
-        currentPage: 1,
-        itemsPerPage: 10,
-        totalSubjects: 0,
-        currentFaculty: '',
-        currentSemester: '',
-        currentStatus: '',
-        searchQuery: '',
-        
-        // API Endpoints - FIXED PATHS
-        API: {
-            getSubjects: '../admin/api/get_subjects.php',
-            addSubject: '../admin/api/add_subject.php',
-            editSubject: '../admin/api/edit_subject.php',
-            // deleteSubject: '../admin/api/delete_subject.php',
-            deleteSubject: 'api/delete_subject.php',
-            getStats: '../admin/api/get_subject_stats.php'
-        },
+    // CORRECT API PATHS - FROM admin/pages/ to admin/api/
+    // const API = {
+    //     getSubjects: '../api/get_subjects.php',      // admin/pages/ → admin/api/
+    //     addSubject: '../api/add_subject.php',
+    //     editSubject: '../api/edit_subject.php',
+    //     getStats: '../api/get_subject_stats.php',
+    //     deactivateSubject: '../api/deactivate_subject.php',
+    //     activateSubject: '../api/activate_subject.php',
+    //     hardDeleteSubject: '../api/hard_delete_subject.php'
+    // };
 
-        // Initialize
-        init: function() {
-            console.log('SubjectManager init called');
-            console.log('API endpoints:', this.API);
-            console.log('Current path:', window.location.pathname);
-            this.bindEvents();
-            this.loadSubjects();
-            this.loadStats();
-        },
-
-        // Bind all events
-        bindEvents: function() {
-            const self = this;
-            
-            // Add subject button
-            $('#addSubjectBtn, #addFirstSubjectBtn').on('click', function() {
-                self.showAddModal();
-            });
-            
-            // Filter changes
-            $('#facultyFilter').on('change', function() {
-                self.currentFaculty = $(this).val();
-                self.currentPage = 1;
-                self.loadSubjects();
-            });
-            
-            $('#semesterFilter').on('change', function() {
-                self.currentSemester = $(this).val();
-                self.currentPage = 1;
-                self.loadSubjects();
-            });
-            
-            $('#statusFilter').on('change', function() {
-                self.currentStatus = $(this).val();
-                self.currentPage = 1;
-                self.loadSubjects();
-            });
-            
-            $('#searchInput').on('keyup', function() {
-                self.searchQuery = $(this).val().trim();
-                self.currentPage = 1;
-                self.loadSubjects();
-            });
-            
-            $('#clearFiltersBtn').on('click', function() {
-                $('#facultyFilter, #semesterFilter, #statusFilter').val('');
-                $('#searchInput').val('');
-                self.currentFaculty = '';
-                self.currentSemester = '';
-                self.currentStatus = '';
-                self.searchQuery = '';
-                self.currentPage = 1;
-                self.loadSubjects();
-            });
-            
-            // Faculty tabs
-            $('#facultyTabs .nav-link, #facultyTabs button').on('click', function() {
-                $('#facultyTabs .nav-link, #facultyTabs button').removeClass('active');
-                $(this).addClass('active');
-                self.currentFaculty = $(this).data('faculty') || '';
-                $('#facultyFilter').val(self.currentFaculty);
-                self.currentPage = 1;
-                self.loadSubjects();
-            });
-            
-            // Save subject
-            $('#saveSubjectBtn').on('click', function() {
-                self.saveSubject();
-            });
-            
-            // Delete subject
-            $('#confirmDeleteBtn').on('click', function() {
-                self.confirmDelete();
-            });
-            
-            // Modal close resets
-            $('#subjectModal').on('hidden.bs.modal', function() {
-                $('#subjectForm')[0].reset();
-                $('#subjectId').val('');
-            });
-        },
+    const API =  {
+        getSubjects: '../admin/api/get_subjects.php',
+        addSubject: '../admin/api/add_subject.php',
+        editSubject: '../admin/api/edit_subject.php',
+        // deleteSubject: '../admin/api/delete_subject.php',
+        deactivateSubject: '../admin/api/deactivate_subject.php',  
+        activateSubject: '../admin/api/activate_subject.php',       
+        hardDeleteSubject: '../admin/api/hard_delete_subject.php',
+        getStats: '../admin/api/get_subject_stats.php'
+    };
+    console.log('API paths (relative to admin/pages/):', API);
+    
+    // ===== INITIALIZE =====
+    function init() {
+        console.log('Initializing from:', window.location.pathname);
+        bindEvents();
+        loadSubjects();
+        loadStats();
+    }
+    
+    // ===== BIND EVENTS =====
+    function bindEvents() {
+        // Add subject button
+        $('#addSubjectBtn, #addFirstSubjectBtn').on('click', showAddModal);
         
-        // Load subjects
-        loadSubjects: function() {
-            this.showLoading();
-            
-            const params = {
-                page: this.currentPage,
-                limit: this.itemsPerPage,
-                faculty_id: this.currentFaculty,
-                semester: this.currentSemester,
-                status: this.currentStatus,
-                search: this.searchQuery
-            };
-            
-            console.log('Loading subjects with:', params);
-            
-            $.ajax({
-                url: this.API.getSubjects,
-                method: 'GET',
-                data: params,
-                dataType: 'json',
-                success: (response) => {
-                    if (response.success) {
-                        this.renderSubjects(response.data);
-                        this.renderPagination(response.total, response.pages);
-                        this.updateEmptyState(response.data.length === 0);
-                    } else {
-                        this.showError('Failed to load subjects: ' + response.message);
-                    }
-                },
-                error: (xhr, status, error) => {
-                    console.error('AJAX Error:', xhr.status, xhr.statusText);
-                    this.showError('Network error: ' + error);
-                },
-                complete: () => {
-                    this.hideLoading();
-                }
-            });
-        },
+        // Filter changes
+        $('#facultyFilter').on('change', function() {
+            currentFaculty = $(this).val();
+            console.log('Faculty filter:', currentFaculty);
+            currentPage = 1;
+            loadSubjects();
+        });
         
-        // Load stats
-        loadStats: function() {
-            $.ajax({
-                url: this.API.getStats,
-                method: 'GET',
-                dataType: 'json',
-                success: (response) => {
-                    if (response.success) {
-                        this.updateStats(response.data);
-                    }
-                }
-            });
-        },
+        $('#semesterFilter').on('change', function() {
+            currentSemester = $(this).val();
+            console.log('Semester filter:', currentSemester);
+            currentPage = 1;
+            loadSubjects();
+        });
         
-        // Render subjects table
-        renderSubjects: function(subjects) {
-            let html = '';
-            
-            if (subjects.length === 0) {
-                html = '<tr><td colspan="8" class="text-center py-4 text-muted">No subjects found</td></tr>';
-            } else {
-                subjects.forEach((subject, index) => {
-                    const rowNumber = (this.currentPage - 1) * this.itemsPerPage + index + 1;
-                    const facultyName = this.getFacultyName(subject.faculty_id);
-                    const statusBadge = subject.is_active ? 
-                        '<span class="badge bg-success">Active</span>' : 
-                        '<span class="badge bg-danger">Inactive</span>';
-                    
-                    html += `
-                        <tr data-id="${subject.subject_id}">
-                            <td>${rowNumber}</td>
-                            <td><strong class="text-primary">${this.escapeHtml(subject.subject_code)}</strong></td>
-                            <td>${this.escapeHtml(subject.subject_name)}</td>
-                            <td>${facultyName}</td>
-                            <td>Semester ${subject.semester}</td>
-                            <td><span class="badge bg-info">${subject.credits} Credits</span></td>
-                            <td>${statusBadge}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary edit-btn me-1" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-            
-            $('#subjectsTable tbody').html(html);
-            this.bindRowActions();
-        },
+        $('#statusFilter').on('change', function() {
+            currentStatus = $(this).val();
+            console.log('Status filter:', currentStatus);
+            currentPage = 1;
+            loadSubjects();
+        });
         
-        // Bind row actions
-        bindRowActions: function() {
-            const self = this;
-            
-            $('.edit-btn').on('click', function() {
-                const subjectId = $(this).closest('tr').data('id');
-                self.editSubject(subjectId);
-            });
-            
-            $('.delete-btn').on('click', function() {
-                const row = $(this).closest('tr');
-                const subjectId = row.data('id');
-                const subjectName = row.find('td:nth-child(3)').text();
-                const subjectCode = row.find('td:nth-child(2) strong').text();
-                self.showDeleteModal(subjectId, subjectName, subjectCode);
-            });
-        },
+        $('#searchInput').on('keyup', function() {
+            searchQuery = $(this).val().trim();
+            currentPage = 1;
+            loadSubjects();
+        });
         
-        // Show add modal
-        showAddModal: function() {
-            $('#modalTitle').html('<i class="fas fa-book me-1"></i> Add New Subject');
-            $('#subjectForm')[0].reset();
-            $('#subjectId').val('');
-            $('#isActive').val('1');
-            new bootstrap.Modal('#subjectModal').show();
-        },
+        $('#clearFiltersBtn').on('click', function() {
+            $('#facultyFilter, #semesterFilter, #statusFilter').val('');
+            $('#searchInput').val('');
+            currentFaculty = '';
+            currentSemester = '';
+            currentStatus = '';
+            searchQuery = '';
+            currentPage = 1;
+            loadSubjects();
+        });
         
-        // Edit subject
-        editSubject: function(subjectId) {
-            this.showLoading();
-            
-            $.ajax({
-                url: this.API.getSubjects,
-                method: 'GET',
-                data: { id: subjectId },
-                dataType: 'json',
-                success: (response) => {
-                    if (response.success && response.data.length > 0) {
-                        const subject = response.data[0];
-                        this.populateEditForm(subject);
-                    } else {
-                        this.showError('Subject not found');
-                    }
-                },
-                error: () => {
-                    this.showError('Failed to load subject data');
-                },
-                complete: () => {
-                    this.hideLoading();
-                }
-            });
-        },
-        
-        // Populate edit form
-        populateEditForm: function(subject) {
-            $('#modalTitle').html('<i class="fas fa-edit me-1"></i> Edit Subject');
-            $('#subjectId').val(subject.subject_id);
-            $('#subjectName').val(subject.subject_name);
-            $('#subjectCode').val(subject.subject_code);
-            $('#facultyId').val(subject.faculty_id);
-            $('#semester').val(subject.semester);
-            $('#credits').val(subject.credits);
-            $('#isActive').val(subject.is_active);
-            $('#description').val(subject.description || '');
-            
-            new bootstrap.Modal('#subjectModal').show();
-        },
-        
-        // Show delete modal
-        showDeleteModal: function(subjectId, subjectName, subjectCode) {
-
-            console.log('=== DELETE MODAL DEBUG ===');
-            console.log('Subject ID to delete:', subjectId);
-            console.log('Subject Name:', subjectName);
-            console.log('Subject Code:', subjectCode);
-            console.log('Type of ID:', typeof subjectId);
-
-
-            $('#deleteSubjectName').text(subjectName);
-            $('#deleteSubjectCode').text(subjectCode);
-            $('#confirmDeleteBtn').data('id', subjectId);
-
-            console.log('Data-id set to:', $('#confirmDeleteBtn').data('id'));
-
-            new bootstrap.Modal('#deleteModal').show();
-        },
+        // Faculty tabs
+        $('#facultyTabs .nav-link, #facultyTabs button').on('click', function() {
+            $('#facultyTabs .nav-link, #facultyTabs button').removeClass('active');
+            $(this).addClass('active');
+            currentFaculty = $(this).data('faculty') || '';
+            $('#facultyFilter').val(currentFaculty);
+            currentPage = 1;
+            loadSubjects();
+        });
         
         // Save subject
-        saveSubject: function() {
-            if (!this.validateForm()) return;
-            
-            const formData = {
-                subject_id: $('#subjectId').val(),
-                subject_name: $('#subjectName').val().trim(),
-                subject_code: $('#subjectCode').val().trim().toUpperCase(),
-                faculty_id: $('#facultyId').val(),
-                semester: $('#semester').val(),
-                credits: $('#credits').val(),
-                is_active: $('#isActive').val(),
-                description: $('#description').val().trim()
-            };
-            
-            const isEdit = formData.subject_id !== '';
-            const apiUrl = isEdit ? this.API.editSubject : this.API.addSubject;
-            
-            const saveBtn = $('#saveSubjectBtn');
-            saveBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Saving...');
-            
-            $.ajax({
-                url: apiUrl,
-                method: 'POST',
-                data: JSON.stringify(formData),
-                contentType: 'application/json',
-                dataType: 'json',
-                success: (response) => {
-                    if (response.success) {
-                        this.showSuccess(response.message || 'Subject saved successfully!');
-                        $('#subjectModal').modal('hide');
-                        this.loadSubjects();
-                        this.loadStats();
-                    } else {
-                        this.showError(response.message || 'Failed to save subject');
-                    }
-                },
-                error: (xhr, status, error) => {
-                    this.showError('Network error: ' + error);
-                },
-                complete: () => {
-                    saveBtn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Save Subject');
+        $('#saveSubjectBtn').on('click', saveSubject);
+        
+        // Modal close 
+        $('#subjectModal').on('hidden.bs.modal', function() {
+            console.log('🔄 MODAL CLOSED - Soft reset (keeping values for quick re-edit)');
+            // Don't reset the form completely, just clear the ID
+            $('#subjectId').val('');
+        });
+    }
+    
+    // ===== LOAD SUBJECTS =====
+    function loadSubjects() {
+        console.log('Loading subjects with params:', {
+            page: currentPage,
+            faculty_id: currentFaculty,
+            semester: currentSemester,
+            status: currentStatus,
+            search: searchQuery
+        });
+        
+        showLoading();
+        
+        $.ajax({
+            url: API.getSubjects,
+            method: 'GET',
+            data: {
+                page: currentPage,
+                limit: itemsPerPage,
+                faculty_id: currentFaculty,
+                semester: currentSemester,
+                status: currentStatus,
+                search: searchQuery
+            },
+            dataType: 'json',
+            success: function(response) {
+                console.log('API Response:', response);
+                if (response.success) {
+                    renderSubjects(response.data);
+                    renderPagination(response.total, response.pages);
+                    updateEmptyState(response.data.length === 0);
+                } else {
+                    alert('Error loading subjects: ' + response.message);
                 }
-            });
-        },
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error Details:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    responseText: xhr.responseText.substring(0, 200)
+                });
+                alert('Network error loading subjects. Check console.');
+            },
+            complete: function() {
+                hideLoading();
+            }
+        });
+    }
+    
+    // ===== RENDER SUBJECTS =====
+    function renderSubjects(subjects) {
+        let html = '';
         
-        // Confirm delete
-        confirmDelete: function() {
-            const subjectId = $('#confirmDeleteBtn').data('id');
-            
-            console.log('Deleting with POST, subject ID:', subjectId);
-            
-            $.ajax({
-                url: this.API.deleteSubject,
-                method: 'POST',  // ← MUST BE POST!
-                data: { subject_id: subjectId },
-                dataType: 'json',
-                success: (response) => {
-                    console.log('Delete response:', response);
-                    if (response.success) {
-                        alert('Success: ' + response.message);
-                        $('#deleteModal').modal('hide');
-                        this.loadSubjects();
-                        this.loadStats();
-                    } else {
-                        alert('Error: ' + response.message);
-                    }
-                },
-                error: (xhr, status, error) => {
-                    console.error('Delete error:', xhr.responseText);
-                    alert('Delete failed');
+        if (subjects.length === 0) {
+            html = '<tr><td colspan="8" class="text-center py-4 text-muted">No subjects found</td></tr>';
+        } else {
+            subjects.forEach((subject, index) => {
+                const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                const facultyName = getFacultyName(subject.faculty_id);
+                const statusBadge = subject.is_active == 1 ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-danger">Inactive</span>';
+                
+                // 3-ACTION BUTTONS
+                let actionButtons = '';
+                
+                if (subject.is_active == 1) {
+                    // ACTIVE: Deactivate + Edit
+                    actionButtons = `
+                        <button class="btn btn-sm btn-warning deactivate-btn me-1">
+                            <i class="fas fa-ban me-1"></i> Deactivate
+                        </button>
+                        <button class="btn btn-sm btn-primary edit-btn">
+                            <i class="fas fa-edit me-1"></i> Edit
+                        </button>
+                    `;
+                } else {
+                    // INACTIVE: Activate + Delete
+                    actionButtons = `
+                        <button class="btn btn-sm btn-success activate-btn me-1">
+                            <i class="fas fa-check me-1"></i> Activate
+                        </button>
+                        <button class="btn btn-sm btn-danger delete-btn">
+                            <i class="fas fa-trash me-1"></i> Delete
+                        </button>
+                    `;
                 }
-            });
-        },
-
-        // Render pagination
-        renderPagination: function(total, totalPages) {
-            this.totalSubjects = total;
-            
-            // Update pagination info
-            const start = ((this.currentPage - 1) * this.itemsPerPage) + 1;
-            const end = Math.min(this.currentPage * this.itemsPerPage, total);
-            $('#paginationInfo').text(`Showing ${start} to ${end} of ${total} subjects`);
-            
-            // Clear existing pagination
-            $('#paginationControls').empty();
-            
-            if (totalPages <= 1) return;
-            
-            // Previous button
-            const prevDisabled = this.currentPage === 1 ? 'disabled' : '';
-            $('#paginationControls').append(`
-                <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" data-page="${this.currentPage - 1}">
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                </li>
-            `);
-            
-            // Page numbers
-            for (let i = 1; i <= totalPages; i++) {
-                const active = i === this.currentPage ? 'active' : '';
-                $('#paginationControls').append(`
-                    <li class="page-item ${active}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                    </li>
-                `);
-            }
-            
-            // Next button
-            const nextDisabled = this.currentPage === totalPages ? 'disabled' : '';
-            $('#paginationControls').append(`
-                <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" data-page="${this.currentPage + 1}">
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                </li>
-            `);
-            
-            // Bind pagination clicks
-            const self = this;
-            $('.page-link').on('click', function(e) {
-                e.preventDefault();
-                const page = $(this).data('page');
-                if (page && page !== self.currentPage) {
-                    self.currentPage = page;
-                    self.loadSubjects();
-                }
-            });
-        },
-        
-        // Update stats
-        updateStats: function(stats) {
-            if (stats.bca !== undefined) $('#bcaSubjectsStat').text(stats.bca);
-            if (stats.bbm !== undefined) $('#bbmSubjectsStat').text(stats.bbm);
-            if (stats.bim !== undefined) $('#bimSubjectsStat').text(stats.bim);
-            if (stats.total !== undefined) $('#totalSubjectsStat').text(stats.total);
-        },
-        
-        // Update empty state
-        updateEmptyState: function(isEmpty) {
-            if (isEmpty) {
-                $('#subjectsTable').hide();
-                $('#paginationSection').hide();
-                $('#noSubjectsPlaceholder').show();
-            } else {
-                $('#subjectsTable').show();
-                $('#paginationSection').show();
-                $('#noSubjectsPlaceholder').hide();
-            }
-        },
-        
-        // Show loading
-        showLoading: function() {
-            $('#loadingRow').show();
-        },
-        
-        // Hide loading
-        hideLoading: function() {
-            $('#loadingRow').hide();
-        },
-        
-        // Validate form
-        validateForm: function() {
-            const name = $('#subjectName').val().trim();
-            const code = $('#subjectCode').val().trim();
-            const faculty = $('#facultyId').val();
-            const semester = $('#semester').val();
-            const credits = $('#credits').val();
-            
-            if (!name) {
-                this.showError('Subject name is required');
-                $('#subjectName').focus();
-                return false;
-            }
-            
-            if (!code) {
-                this.showError('Subject code is required');
-                $('#subjectCode').focus();
-                return false;
-            }
-            
-            if (!faculty) {
-                this.showError('Please select a faculty');
-                $('#facultyId').focus();
-                return false;
-            }
-            
-            if (!semester) {
-                this.showError('Please select a semester');
-                $('#semester').focus();
-                return false;
-            }
-            
-            if (!credits) {
-                this.showError('Please select credit hours');
-                $('#credits').focus();
-                return false;
-            }
-            
-            return true;
-        },
-        
-        // Get faculty name
-        getFacultyName: function(facultyId) {
-            const facultyMap = {
-                1: 'BCA',
-                2: 'BBM', 
-                3: 'BIM'
-            };
-            return facultyMap[facultyId] || 'Unknown';
-        },
-        
-        // Show success message
-        showSuccess: function(message) {
-            alert('Success: ' + message);
-        },
-        
-        // Show error message
-        showError: function(message) {
-            alert('Error: ' + message);
-        },
-        
-        // Escape HTML
-        escapeHtml: function(text) {
-            return text.replace(/[&<>"']/g, function(m) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                }[m];
+                
+                html += `
+                    <tr data-id="${subject.subject_id}">
+                        <td>${rowNumber}</td>
+                        <td><strong class="text-primary">${escapeHtml(subject.subject_code)}</strong></td>
+                        <td>${escapeHtml(subject.subject_name)}</td>
+                        <td>${facultyName}</td>
+                        <td>Semester ${subject.semester}</td>
+                        <td><span class="badge bg-info">${subject.credits} Credits</span></td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                ${actionButtons}
+                            </div>
+                        </td>
+                    </tr>
+                `;
             });
         }
-    };
+        
+        $('#subjectsTable tbody').html(html);
+        bindRowActions();
+    }
     
-    // Expose to window
-    window.SubjectManager = SubjectManager;
+    // ===== BIND ROW ACTIONS =====
+    function bindRowActions() {
+        // Edit button
+        $('.edit-btn').on('click', function() {
+            const subjectId = $(this).closest('tr').data('id');
+            editSubject(subjectId);
+        });
+        
+        // Deactivate button
+        $('.deactivate-btn').on('click', function() {
+            const subjectId = $(this).closest('tr').data('id');
+            const subjectName = $(this).closest('tr').find('td:nth-child(3)').text();
+            const subjectCode = $(this).closest('tr').find('td:nth-child(2) strong').text();
+            
+            if (confirm(`Deactivate "${subjectCode} - ${subjectName}"?`)) {
+                deactivateSubject(subjectId);
+            }
+        });
+        
+        // Activate button
+        $('.activate-btn').on('click', function() {
+            const subjectId = $(this).closest('tr').data('id');
+            const subjectName = $(this).closest('tr').find('td:nth-child(3)').text();
+            const subjectCode = $(this).closest('tr').find('td:nth-child(2) strong').text();
+            
+            if (confirm(`Activate "${subjectCode} - ${subjectName}"?`)) {
+                activateSubject(subjectId);
+            }
+        });
+        
+        // Delete button
+        $('.delete-btn').on('click', function() {
+            const subjectId = $(this).closest('tr').data('id');
+            const subjectName = $(this).closest('tr').find('td:nth-child(3)').text();
+            const subjectCode = $(this).closest('tr').find('td:nth-child(2) strong').text();
+            
+            if (confirm(`PERMANENTLY delete "${subjectCode} - ${subjectName}"?\n\nThis cannot be undone!`)) {
+                const confirmText = prompt('Type "DELETE" to confirm:');
+                if (confirmText === "DELETE") {
+                    deleteSubject(subjectId);
+                }
+            }
+        });
+    }
     
-    // Auto-init if on subject management page
-    $(document).ready(function() {
-        if ($('#subjectsTable').length) {
-            console.log('Auto-initializing SubjectManager');
-            SubjectManager.init();
+    // ===== 3 ACTION FUNCTIONS =====
+    function deactivateSubject(subjectId) {
+        console.log('Deactivating subject:', subjectId);
+        $.ajax({
+            url: API.deactivateSubject,
+            method: 'POST',
+            data: { subject_id: subjectId },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    alert('Subject deactivated!');
+                    loadSubjects();
+                    loadStats();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Network error deactivating subject');
+            }
+        });
+    }
+    
+    function activateSubject(subjectId) {
+        console.log('Activating subject:', subjectId);
+        $.ajax({
+            url: API.activateSubject,
+            method: 'POST',
+            data: { subject_id: subjectId },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    alert('Subject activated!');
+                    loadSubjects();
+                    loadStats();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Network error activating subject');
+            }
+        });
+    }
+    
+    function deleteSubject(subjectId) {
+        console.log('Deleting subject:', subjectId);
+        $.ajax({
+            url: API.hardDeleteSubject,
+            method: 'POST',
+            data: { subject_id: subjectId },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    alert('Subject permanently deleted!');
+                    loadSubjects();
+                    loadStats();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Network error deleting subject');
+            }
+        });
+    }
+    
+    // ===== EDIT/SAVE FUNCTIONS =====
+    function showAddModal() {
+        $('#modalTitle').html('<i class="fas fa-book me-1"></i> Add New Subject');
+        $('#subjectForm')[0].reset();
+        $('#subjectId').val('');
+        $('#isActive').val('1');
+        new bootstrap.Modal('#subjectModal').show();
+    }
+    
+    function editSubject(subjectId) {
+        console.log('Editing subject:', subjectId);
+        
+        $.ajax({
+            url: API.getSubjects,
+            method: 'GET',
+            data: { 
+                id: subjectId,
+                status: ''  // ← EMPTY STRING = NO STATUS FILTER
+            },
+            dataType: 'json',
+            success: function(response) {
+                console.log('Edit response:', response);
+                if (response.success && response.data.length > 0) {
+                    const subject = response.data[0];
+                    console.log('Subject data for edit:', subject);
+                    populateEditForm(subject);
+                } else {
+                    alert('Subject not found. It might be inactive.');
+                }
+            },
+            error: function(xhr) {
+                console.error('Edit error:', xhr.responseText);
+                alert('Failed to load subject data');
+            }
+        });
+    }
+    
+    function populateEditForm(subject) {
+        console.log('🎯 populateEditForm for:', subject.subject_code);
+        console.log('🎯 is_elective:', subject.is_elective, 'type:', typeof subject.is_elective);
+        
+        // DON'T reset the form! Just populate
+        
+        // Set modal title and hidden ID
+        $('#modalTitle').html('<i class="fas fa-edit me-1"></i> Edit Subject');
+        $('#subjectId').val(subject.subject_id);
+        
+        // Set visible fields
+        $('#subjectName').val(subject.subject_name);
+        $('#subjectCode').val(subject.subject_code);
+        $('#facultyId').val(subject.faculty_id);
+        $('#semester').val(subject.semester);
+        $('#credits').val(subject.credits);
+        $('#isActive').val(subject.is_active);
+        $('#description').val(subject.description || '');
+        
+        // ✅ CRITICAL: Set dropdown with PROPER debugging
+        const electiveValue = String(subject.is_elective);
+        console.log('🎯 Setting #isElective to:', electiveValue);
+        
+        // Method 1: Direct DOM (most reliable)
+        const domElement = document.getElementById('isElective');
+        if (domElement) {
+            console.log('🎯 Before DOM set:', domElement.value);
+            domElement.value = electiveValue;
+            console.log('🎯 After DOM set:', domElement.value);
         }
-    });
-}
-
+        
+        // Method 2: Force with jQuery
+        $('#isElective').val(electiveValue);
+        console.log('🎯 After jQuery set:', $('#isElective').val());
+        
+        // Verify
+        console.log('🎯 FINAL CHECK:');
+        console.log('- DOM value:', domElement?.value);
+        console.log('- jQuery value:', $('#isElective').val());
+        console.log('- Selected text:', $('#isElective option:selected').text());
+        
+        // Show modal
+        new bootstrap.Modal('#subjectModal').show();
+        
+        // Check 100ms after modal shows
+        setTimeout(() => {
+            console.log('⏱️ After modal shown:');
+            console.log('Dropdown value:', $('#isElective').val());
+            console.log('Selected text:', $('#isElective option:selected').text());
+        }, 100);
+    }
+    
+    function saveSubject() {
+        console.log('Saving subject...');
+        
+        // Get ALL values separately for debugging
+        const subjectId = $('#subjectId').val();
+        const subjectName = $('#subjectName').val().trim();
+        const subjectCode = $('#subjectCode').val().trim().toUpperCase();
+        const facultyId = $('#facultyId').val();
+        const semester = $('#semester').val();
+        const credits = $('#credits').val();
+        const isElective = $('#isElective').val();
+        const isActive = $('#isActive').val();
+        const description = $('#description').val().trim();
+        
+        console.log('DEBUG FORM VALUES:');
+        console.log('subjectId:', subjectId);
+        console.log('isElective VALUE:', isElective);
+        console.log('isElective ELEMENT:', $('#isElective'));
+        console.log('Selected option text:', $('#isElective option:selected').text());
+        console.log('All options:');
+        $('#isElective option').each(function(i, opt) {
+            console.log(`  Option ${i}: value="${opt.value}", text="${opt.text}"`);
+        });
+        
+        const formData = {
+            subject_id: subjectId,
+            subject_name: subjectName,
+            subject_code: subjectCode,
+            faculty_id: facultyId,
+            semester: semester,
+            credits: credits,
+            is_elective: isElective,
+            is_active: isActive,
+            description: description
+        };
+        
+        console.log('COMPLETE Form data:', formData);
+        console.log('JSON being sent:', JSON.stringify(formData, null, 2));
+        
+        // Validation
+        if (!subjectName) {
+            alert('Subject name is required');
+            return;
+        }
+        
+        const isEdit = subjectId !== '';
+        const apiUrl = isEdit ? API.editSubject : API.addSubject;
+        
+        const saveBtn = $('#saveSubjectBtn');
+        saveBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Saving...');
+        
+        $.ajax({
+            url: apiUrl,
+            method: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            dataType: 'json',
+            success: function(response) {
+                console.log('Save response:', response);
+                if (response.success) {
+                    alert('✓ ' + (response.message || 'Subject saved successfully!'));
+                    $('#subjectModal').modal('hide');
+                    loadSubjects();
+                    loadStats();
+                } else {
+                    alert('✗ ' + (response.message || 'Failed to save subject'));
+                }
+            },
+            error: function(xhr) {
+                console.error('Save error:', xhr.responseText);
+                alert('Network error. Check console for details.');
+            },
+            complete: function() {
+                saveBtn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Save Subject');
+            }
+        });
+    }
+    
+    // ===== UTILITY FUNCTIONS =====
+    function loadStats() {
+        $.ajax({
+            url: API.getStats,
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    updateStats(response.data);
+                }
+            }
+        });
+    }
+    
+    function updateStats(stats) {
+        if (stats.bca !== undefined) $('#bcaSubjectsStat').text(stats.bca);
+        if (stats.bbm !== undefined) $('#bbmSubjectsStat').text(stats.bbm);
+        if (stats.bim !== undefined) $('#bimSubjectsStat').text(stats.bim);
+        if (stats.total !== undefined) $('#totalSubjectsStat').text(stats.total);
+    }
+    
+    function renderPagination(total, totalPages) {
+        const start = ((currentPage - 1) * itemsPerPage) + 1;
+        const end = Math.min(currentPage * itemsPerPage, total);
+        $('#paginationInfo').text(`Showing ${start} to ${end} of ${total} subjects`);
+        
+        $('#paginationControls').empty();
+        
+        if (totalPages <= 1) return;
+        
+        // Previous
+        const prevDisabled = currentPage === 1 ? 'disabled' : '';
+        $('#paginationControls').append(`
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+        `);
+        
+        // Pages
+        for (let i = 1; i <= totalPages; i++) {
+            const active = i === currentPage ? 'active' : '';
+            $('#paginationControls').append(`
+                <li class="page-item ${active}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `);
+        }
+        
+        // Next
+        const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+        $('#paginationControls').append(`
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        `);
+        
+        $('.page-link').on('click', function(e) {
+            e.preventDefault();
+            const page = $(this).data('page');
+            if (page && page !== currentPage) {
+                currentPage = page;
+                loadSubjects();
+            }
+        });
+    }
+    
+    function updateEmptyState(isEmpty) {
+        if (isEmpty) {
+            $('#subjectsTable').hide();
+            $('#paginationSection').hide();
+            $('#noSubjectsPlaceholder').show();
+        } else {
+            $('#subjectsTable').show();
+            $('#paginationSection').show();
+            $('#noSubjectsPlaceholder').hide();
+        }
+    }
+    
+    function showLoading() {
+        $('#loadingRow').show();
+    }
+    
+    function hideLoading() {
+        $('#loadingRow').hide();
+    }
+    
+    function getFacultyName(facultyId) {
+        const facultyMap = { 1: 'BCA', 2: 'BBM', 3: 'BIM' };
+        return facultyMap[facultyId] || 'Unknown';
+    }
+    
+    function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, function(m) {
+            return {
+                '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;'
+            }[m];
+        });
+    }
+    
+    // ===== START EVERYTHING =====
+    init();
+});

@@ -49,6 +49,7 @@ try {
     $faculty_id = intval($data['faculty_id']);
     $semester = intval($data['semester']);
     $credits = intval($data['credits']);
+    $is_elective = intval($input['is_elective'] ?? 0);
     $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
     $description = isset($data['description']) ? mysqli_real_escape_string($conn, trim($data['description'])) : '';
     
@@ -81,7 +82,8 @@ try {
                 subject_code, 
                 faculty_id, 
                 semester, 
-                credits, 
+                credits,
+                is_elective, 
                 description, 
                 is_active,
                 created_at
@@ -92,12 +94,13 @@ try {
         throw new Exception('Database error: ' . mysqli_error($conn));
     }
     
-    mysqli_stmt_bind_param($stmt, 'ssiiisi', 
+    mysqli_stmt_bind_param($stmt, 'ssiiiisi', 
         $subject_name, 
         $subject_code, 
         $faculty_id, 
         $semester, 
         $credits, 
+        $is_elective,
         $description, 
         $is_active
     );

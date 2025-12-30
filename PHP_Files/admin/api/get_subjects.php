@@ -83,8 +83,8 @@ try {
         $conditions[] = "s.is_active = ?";
         $params[] = $status;
         $types .= 'i';
-    }else {
-        // Default to active if no status filter
+    }else if(empty($subject_id)) {
+        // Only apply active filter when NOT getting single subject
         $conditions[] = "s.is_active = 1";
     }
     
@@ -156,6 +156,7 @@ try {
                 f.faculty_name,
                 s.semester,
                 s.credits,
+                s.is_elective,
                 s.description,
                 s.is_active,
                 s.created_at
@@ -200,6 +201,7 @@ try {
             'faculty_name' => $row['faculty_name'],
             'semester' => $row['semester'],
             'credits' => $row['credits'],
+            'is_elective' => $row['is_elective'],
             'description' => $row['description'],
             'is_active' => $row['is_active'],
             'created_at' => $row['created_at']

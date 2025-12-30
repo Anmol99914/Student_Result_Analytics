@@ -147,7 +147,7 @@ $semesters = range(1, 8);
                     <div class="form-group">
                         <label for="statusFilter" class="form-label">Status</label>
                         <select class="form-control form-select" id="statusFilter">
-                            <option value="">All Status</option>
+                            <!-- <option value="">All Status</option> -->
                             <option value="1">Active</option>
                             <option value="0">Inactive</option>
                         </select>
@@ -314,9 +314,9 @@ $semesters = range(1, 8);
                         </div>
                         <div class="col-md-6 mb-3">
                         <label for="isElective" class="form-label">Subject Type</label>
-                            <select class="form-select" id="isElective">
-                                <option value="0">Core/Compulsory</option>
-                                <option value="1">Elective</option>
+                            <select class="form-select" id="isElective" name = "is_elective" required>
+                                <option value="0">Core Subject</option>
+                                <option value="1">Elective Subject</option>
                             </select>
                             <label for="isActive" class="form-label">Status</label>
                             <select class="form-select" id="isActive">
@@ -416,5 +416,18 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('SubjectManager not found! Check if subject-management.js loaded.');
     }
+});
+</script>
+
+<script>
+// Add this after your table to test
+$(document).ready(function() {
+    console.log('=== DEBUG SUBJECT STATUS ===');
+    $.get('../admin/api/get_subjects.php?limit=5', function(data) {
+        console.log('Sample subjects:', data.data);
+        data.data.forEach(subject => {
+            console.log(`${subject.subject_code}: is_active = ${subject.is_active} (type: ${typeof subject.is_active})`);
+        });
+    });
 });
 </script>
