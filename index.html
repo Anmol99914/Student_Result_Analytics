@@ -137,14 +137,19 @@
                 </ul>
 
                 <div class="d-flex flex-wrap">
+                    <!-- ✅ UPDATED: Correct path to student login -->
                     <button type="button" class="btn btn-outline-light me-2 mb-2 mb-lg-0"
-                        onclick="location.href='PHP_Files/student/student_login.php'">
+                        onclick="location.href='PHP_Files/student/pages/login.php'">
                         Student Login
                     </button>
+                    
+                    <!-- ✅ Teacher login (placeholder - will create later) -->
                     <button type="button" class="btn btn-outline-light me-2 mb-2 mb-lg-0"
-                        onclick="location.href='PHP_Files/teacher/teacher_login.php'">
+                        onclick="location.href='PHP_Files/teacher/login.php'">
                         Teacher Login
                     </button>
+                    
+                    <!-- ✅ Admin login (assume correct path) -->
                     <button type="button" class="btn btn-outline-light me-2 mb-2 mb-lg-0"
                         onclick="location.href='PHP_Files/admin/admin_login.php'">
                         Admin Login
@@ -181,10 +186,56 @@
     <div class="notice-board">
         <h3>Notice Board</h3>
         <ul>
-            <li><a href="#">Notice Issue 1</a></li>
-            <li><a href="#">Notice Issue 2</a></li>
-            <li><a href="#">Notice Issue 3</a></li>
+            <!-- ✅ You might want to make these dynamic later -->
+            <li><a href="#">Semester 3 Results Published</a></li>
+            <li><a href="#">Fee Payment Deadline: 25 Dec 2024</a></li>
+            <li><a href="#">Final Exam Schedule Updated</a></li>
         </ul>
+    </div>
+
+    <!-- Quick Info Cards -->
+    <div class="container my-5">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 text-center border-primary">
+                    <div class="card-body">
+                        <i class="bi bi-mortarboard fs-1 text-primary mb-3"></i>
+                        <h5 class="card-title">For Students</h5>
+                        <p class="card-text">Access your academic results, view profile, and track payment status securely.</p>
+                        <button type="button" class="btn btn-primary"
+                            onclick="location.href='PHP_Files/student/pages/login.php'">
+                            Go to Student Portal
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 text-center border-success">
+                    <div class="card-body">
+                        <i class="bi bi-person-badge fs-1 text-success mb-3"></i>
+                        <h5 class="card-title">For Teachers</h5>
+                        <p class="card-text">Enter student marks, manage class assignments, and submit results for verification.</p>
+                        <button type="button" class="btn btn-success"
+                            onclick="location.href='PHP_Files/teacher/login.php'">
+                            Go to Teacher Portal
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 text-center border-warning">
+                    <div class="card-body">
+                        <i class="bi bi-gear fs-1 text-warning mb-3"></i>
+                        <h5 class="card-title">For Administrators</h5>
+                        <p class="card-text">Manage student records, verify results, and oversee the complete academic system.</p>
+                        <button type="button" class="btn btn-warning text-white"
+                            onclick="location.href='PHP_Files/admin/admin_login.php'">
+                            Go to Admin Panel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -197,7 +248,7 @@
                         <use xlink:href="#bootstrap"></use>
                     </svg>
                 </a>
-                <span class="mb-3 mb-md-0 text-body-secondary">© 2025 SRA</span>
+                <span class="mb-3 mb-md-0 text-body-secondary">© 2025 Student Result Analytics System</span>
             </div>
 
             <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
@@ -213,6 +264,11 @@
                         <i class="bi bi-facebook" style="font-size: 1.5rem;"></i>
                     </a>
                 </li>
+                <li class="ms-3">
+                    <a class="text-body-secondary" href="mailto:admin@sra.edu" aria-label="Email">
+                        <i class="bi bi-envelope" style="font-size: 1.5rem;"></i>
+                    </a>
+                </li>
             </ul>
         </footer>
     </div>
@@ -220,6 +276,42 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous">
+    </script>
+    
+    <script>
+        // Simple JavaScript to improve user experience
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effect to cards
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.style.transition = 'transform 0.3s, box-shadow 0.3s';
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    this.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                });
+            });
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    if(targetId !== '#') {
+                        const targetElement = document.querySelector(targetId);
+                        if(targetElement) {
+                            window.scrollTo({
+                                top: targetElement.offsetTop - 70,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                });
+            });
+        });
     </script>
 </body>
 

@@ -1,0 +1,233 @@
+/* File: PHP_Files/student/css/login.css */
+/* Student Login Page Styles */
+
+:root {
+    --student-primary: #28a745;
+    --student-secondary: #218838;
+    --student-light: #e8f5e9;
+}
+
+body { 
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.login-wrapper {
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.login-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(40, 167, 69, 0.12);
+    border: 1px solid rgba(40, 167, 69, 0.08);
+    overflow: hidden;
+}
+
+.student-icon {
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, var(--student-primary) 0%, var(--student-secondary) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -45px auto 25px;
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.25);
+    border: 4px solid white;
+    position: relative;
+}
+
+.student-icon:after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    background: linear-gradient(135deg, var(--student-primary) 0%, var(--student-secondary) 100%);
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0.12;
+}
+
+.form-control {
+    border: 2px solid #e0e6ed;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 1.05rem;
+    transition: all 0.3s ease;
+    background: #f9f9f9;
+}
+
+.form-control:focus {
+    border-color: var(--student-primary);
+    box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.1);
+    background: white;
+    transform: translateY(-1px);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.btn-student {
+    background: linear-gradient(135deg, var(--student-primary) 0%, var(--student-secondary) 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.2);
+}
+
+.btn-student:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(40, 167, 69, 0.3);
+    background: linear-gradient(135deg, var(--student-secondary) 0%, var(--student-primary) 100%);
+}
+
+.floating-label {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.floating-label .form-control:focus ~ .floating-text,
+.floating-label .form-control:not(:placeholder-shown) ~ .floating-text {
+    transform: translateY(-28px) scale(0.85);
+    color: var(--student-primary);
+    font-weight: 600;
+    background: white;
+    padding: 0 10px;
+    left: 10px;
+}
+
+.floating-text {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #f9f9f9;
+    padding: 0 8px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+    color: #64748b;
+    font-size: 1.05rem;
+}
+
+.status-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    padding: 6px 15px;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
+}
+
+.header-text h2 {
+    color: #1a202c;
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--student-primary) 0%, var(--student-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-text p {
+    color: #718096;
+    font-size: 1.1rem;
+    font-weight: 400;
+}
+
+.form-check-input:checked {
+    background-color: var(--student-primary);
+    border-color: var(--student-primary);
+}
+
+.form-check-input:focus {
+    border-color: var(--student-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25);
+}
+
+.help-links {
+    color: var(--student-primary);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.help-links:hover {
+    color: var(--student-secondary);
+    text-decoration: underline;
+}
+
+.student-notice {
+    background: linear-gradient(135deg, var(--student-light) 0%, #f0f9f0 100%);
+    border: 1px solid rgba(40, 167, 69, 0.12);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    margin-top: 25px;
+}
+
+.back-home-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e2e8f0;
+    color: var(--student-primary);
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.back-home-btn:hover {
+    background: white;
+    border-color: var(--student-primary);
+    color: var(--student-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.15);
+}
+
+.welcome-note {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-left: 5px solid var(--student-primary);
+}
+
+@media (max-width: 768px) {
+    .login-wrapper {
+        max-width: 90%;
+        padding: 0 15px;
+    }
+    
+    .student-icon {
+        width: 80px;
+        height: 80px;
+        margin-top: -40px;
+    }
+    
+    .header-text h2 {
+        font-size: 1.7rem;
+    }
+    
+    .welcome-note {
+        padding: 15px;
+    }
+}

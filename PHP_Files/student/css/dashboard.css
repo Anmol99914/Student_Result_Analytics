@@ -1,0 +1,180 @@
+/* File: PHP_Files/student/css/dashboard.css */
+/* Student Dashboard Styles */
+
+#main-content {
+    background-color: #f9fafb;
+    border-radius: 8px;
+    min-height: 70vh;
+}
+
+/* Navigation */
+.bg-dark {
+    background-color: #1a1a2e !important;
+}
+
+.nav-link.text-white:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 2px solid #f0f0f0;
+    font-weight: 600;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 5px 10px;
+}
+
+/* Tables */
+.table th {
+    font-weight: 600;
+    color: #495057;
+    border-top: none;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Alerts */
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.btn-outline-primary {
+    border-width: 2px;
+}
+
+/* Mobile sidebar */
+.offcanvas-start {
+    width: 280px;
+}
+
+@media (max-width: 768px) {
+    #main-content {
+        padding: 15px !important;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+}
+/* Additional styles for dashboard components */
+
+/* Profile page specific */
+.avatar-lg {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+}
+
+/* Home page stats cards */
+.avatar {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Form controls in profile page */
+.form-control.bg-light {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Table hover */
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Status badges */
+.badge {
+    padding: 0.5em 1em;
+    font-weight: 500;
+}
+
+/* Quick actions buttons */
+.btn-outline-primary.text-start {
+    text-align: left;
+    padding: 0.75rem 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .avatar-lg {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Loading animation */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Navigation active state */
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.375rem;
+}
+
+/* Offcanvas sidebar */
+.offcanvas-start {
+    width: 280px;
+}
+
+/* Footer */
+footer {
+    background-color: #f8f9fa;
+}
