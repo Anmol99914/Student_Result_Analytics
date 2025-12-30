@@ -13,6 +13,26 @@ $student_name = $_SESSION['student_name'] ?? 'Student';
 $student_id = $_SESSION['student_username'] ?? '';
 ?>
 
+<!-- script to load home page immediately -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load home page immediately if main content is empty
+    setTimeout(function() {
+        const mainContent = document.getElementById('main-content');
+        if (mainContent && mainContent.innerHTML.includes('Loading')) {
+            // Simulate click on home link
+            const homeLink = document.querySelector('a[href="../pages/home.php"]');
+            if (homeLink) {
+                homeLink.click();
+            } else {
+                // Direct load
+                loadPage('../pages/home.php');
+            }
+        }
+    }, 100);
+});
+</script>
+
 <!-- Navbar -->
 <nav class="navbar navbar-light bg-light border-bottom sticky-top">
     <div class="container-fluid">
@@ -123,11 +143,11 @@ $student_id = $_SESSION['student_username'] ?? '';
                     </a>
                     
                     <!-- Logout -->
-                    <div class="mt-4 pt-3 border-top border-secondary">
+                    <!-- <div class="mt-4 pt-3 border-top border-secondary">
                         <a class="nav-link text-danger" href="../api/logout.php">
                             <i class="bi bi-box-arrow-right me-2"></i>Logout
                         </a>
-                    </div>
+                    </div> -->
                 </nav>
             </div>
         </div>
@@ -178,11 +198,11 @@ $student_id = $_SESSION['student_username'] ?? '';
                             <i class="bi bi-question-circle me-2"></i>Help Desk
                         </a>
                         
-                        <div class="mt-4 pt-3 border-top border-secondary">
+                        <!-- <div class="mt-4 pt-3 border-top border-secondary">
                             <a class="nav-link text-danger" href="../api/logout.php">
                                 <i class="bi bi-box-arrow-right me-2"></i>Logout
                             </a>
-                        </div>
+                        </div> -->
                     </nav>
                 </div>
             </div>

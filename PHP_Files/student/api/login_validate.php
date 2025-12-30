@@ -1,8 +1,6 @@
 <?php
-// File: PHP_Files/student/api/login_validate.php - TEMPORARY FIX VERSION
+// File: PHP_Files/student/api/login_validate.php
 session_start();
-
-// Include root config
 require_once '../../../config.php';
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -13,13 +11,11 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 $username = trim($_POST['username'] ?? '');
 $password = trim($_POST['password'] ?? '');
 
-// Validate input
 if (empty($username) || empty($password)) {
     header("Location: ../pages/login.php?error=empty");
     exit();
 }
 
-// Check in STUDENT table
 $stmt = $connection->prepare("
     SELECT student_id, student_name, email, password, class_id, semester_id, is_active 
     FROM student 
@@ -31,10 +27,27 @@ $stmt->store_result();
 $stmt->bind_result($student_id, $student_name, $email, $db_password, $class_id, $semester_id, $is_active);
 
 if($stmt->fetch()) {
-    // TEMPORARY FIX: Compare plain text passwords
-    // Your database has 'pass123' as plain text
-    if($password === $db_password) {
+    // Check password - supports both plain text and hashed
+    $password_valid = false;
+    
+    // Method 1: Check if password is already hashed (starts with $2y$)
+    if (strpos($db_password, '$2y$') === 0) {
+        // Password is hashed, verify it
+        $password_valid = password_verify($password, $db_password);
+    } else {
+        // Password is plain text, compare directly
+        $password_valid = ($password === $db_password);
         
+        // Optional: Auto-upgrade to hash
+        if ($password_valid) {
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $update_stmt = $connection->prepare("UPDATE student SET password = ? WHERE student_id = ?");
+            $update_stmt->bind_param("ss", $hashed_password, $student_id);
+            $update_stmt->execute();
+        }
+    }
+    
+    if($password_valid) {
         // Check if student is active
         if($is_active != 1){
             session_unset();
@@ -51,34 +64,15 @@ if($stmt->fetch()) {
         $_SESSION['student_class'] = $class_id;
         $_SESSION['student_semester'] = $semester_id;
         
-        // Set session cookie parameters
-        $sessionParams = session_get_cookie_params();
-        setcookie(
-            session_name(),
-            session_id(),
-            [
-                'lifetime' => 86400, // 24 hours
-                'path' => $sessionParams['path'],
-                'domain' => $sessionParams['domain'],
-                'secure' => $sessionParams['secure'],
-                'httponly' => $sessionParams['httponly'],
-                'samesite' => 'Strict'
-            ]
-        );
-        
         // Redirect to dashboard
         header("Location: ../pages/dashboard.php");
         exit();
         
     } else {
-        session_unset();
-        session_destroy();
         header("Location: ../pages/login.php?error=invalid");
         exit();
     }
 } else {
-    session_unset();
-    session_destroy();
     header("Location: ../pages/login.php?error=invalid");
     exit();
 }

@@ -94,32 +94,47 @@ body {
     background: linear-gradient(135deg, var(--student-secondary) 0%, var(--student-primary) 100%);
 }
 
+/* TO THIS (Improved version): */
 .floating-label {
     position: relative;
     margin-bottom: 25px;
 }
 
+.floating-label .form-control {
+    background: transparent !important;
+    z-index: 2;
+    position: relative;
+}
+
+.floating-label .form-control:focus,
+.floating-label .form-control:not(:placeholder-shown) {
+    padding-top: 24px;
+    padding-bottom: 10px;
+}
+
 .floating-label .form-control:focus ~ .floating-text,
 .floating-label .form-control:not(:placeholder-shown) ~ .floating-text {
-    transform: translateY(-28px) scale(0.85);
+    transform: translateY(-32px) scale(0.85);
     color: var(--student-primary);
     font-weight: 600;
     background: white;
     padding: 0 10px;
     left: 10px;
+    z-index: 3;
 }
 
 .floating-text {
     position: absolute;
     left: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: #f9f9f9;
+    top: 18px;
+    transform: translateY(0);
+    background: transparent;
     padding: 0 8px;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     pointer-events: none;
     color: #64748b;
     font-size: 1.05rem;
+    z-index: 1;
 }
 
 .status-badge {

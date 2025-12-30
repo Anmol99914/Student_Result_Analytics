@@ -19,7 +19,8 @@ function loadPage(url) {
         'script[src*="class-management.js"]',
         'script[src*="teacher-management.js"]',
         'script[src*="assign-teachers.js"]',
-        'script[src*="subject-management.js"]'
+        'script[src*="subject-management.js"]',
+        'script[src*="student-management.js"]' 
     ];
     
     scriptsToRemove.forEach(selector => {
@@ -88,7 +89,17 @@ function executeScriptsInContent(container) {
     scripts.forEach(script => {
         console.log('Found script:', script.src || 'inline script');
         
-        // If it's an external script
+        // SKIP external scripts that pages include themselves
+        if (script.src && (
+            script.src.includes('class-management.js') || 
+            script.src.includes('student-management.js') ||
+            script.src.includes('teacher-management.js')
+        )) {
+            console.log('Skipping external script - page includes it:', script.src);
+            return; // Skip this script
+        }
+        
+        // If it's an external script (other than management scripts)
         if (script.src) {
             const newScript = document.createElement('script');
             newScript.src = script.src;
@@ -114,6 +125,37 @@ function executeScriptsInContent(container) {
                 console.error('Error executing inline script:', error);
             }
         }
+    });
+}
+
+// Helper function to load external scripts
+function loadExternalScript(src) {
+    return new Promise((resolve, reject) => {
+        // Check if already loaded
+        const existing = Array.from(document.querySelectorAll('script'))
+            .find(s => s.src === src);
+        
+        if (existing) {
+            console.log('Script already loaded:', src);
+            resolve();
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = false;
+        
+        script.onload = () => {
+            console.log('Script loaded successfully:', src);
+            resolve();
+        };
+        
+        script.onerror = (error) => {
+            console.error('Failed to load script:', src, error);
+            reject(error);
+        };
+        
+        document.head.appendChild(script);
     });
 }
 
@@ -190,25 +232,31 @@ function showAlert(type, message) {
 
 // Load teacher management
 function loadTeacherManagement() {
-    console.log('Loading teacher management...');
+    console.log('Loading teacher management:)');
     loadPage('pages/teacher_management.php');
 }
 
 // Load class management
 function loadClassManagement() {
-    console.log('Loading class management...');
+    console.log('Loading class management:)');
     loadPage('pages/class_management.php');
+}
+
+// Function to load Student Management
+function loadStudentManagement() {
+    console.log('Loading student management:)');
+    loadPage('pages/manage_students.php');
 }
 
 // Load dashboard/home
 function loadDashboard() {
-    console.log('Loading dashboard...');
+    console.log('Loading dashboard:)');
     loadPage('pages/home.php');
 }
 
 // Load subject management
 function loadSubjectManagement() {
-    console.log('Loading subject management...');
+    console.log('Loading subject management:)');
     loadPage('pages/subject_management.php');
 }
 
@@ -235,7 +283,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadTeacherManagement();
                 } else if (onclick.includes('loadClassManagement')) {
                     loadClassManagement();
-                } else if (onclick.includes('loadDashboard')) {
+                } else if (onclick.includes('loadStudentManagement')) { 
+                    loadStudentManagement();
+                }else if (onclick.includes('loadDashboard')) {
                     loadDashboard();
                 } else if (onclick.includes('loadSubjectManagement')) {
                     loadSubjectManagement();

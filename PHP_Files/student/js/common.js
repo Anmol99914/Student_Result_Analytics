@@ -167,3 +167,30 @@ document.addEventListener('DOMContentLoaded', function() {
         activeLink.classList.add('active');
     }
 });
+
+
+// To prevent back navigation:)
+function preventBackNavigation() {
+    window.history.forward();
+    
+    // Clear browser cache on page load
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+    
+    // Disable back button
+    window.onpopstate = function(event) {
+        history.go(1);
+    };
+}
+
+// Call it when dashboard loads
+if (window.location.pathname.includes('dashboard.php') || 
+    window.location.pathname.includes('home.php') ||
+    window.location.pathname.includes('profile.php') ||
+    window.location.pathname.includes('results.php') ||
+    window.location.pathname.includes('payments.php')) {
+    preventBackNavigation();
+}

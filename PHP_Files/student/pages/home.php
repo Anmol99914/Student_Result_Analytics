@@ -9,10 +9,12 @@ require_once '../../../config.php';
 $student_id = $_SESSION['student_username'];
 $student_name = $_SESSION['student_name'];
 
-// Fetch student data
+// Fetch student data - CORRECTED QUERY (no address column)
 $stmt = $connection->prepare("
-    SELECT s.student_id, s.student_name, s.email, s.phone, s.address, 
-           s.admission_date, s.is_active, c.class_name, sem.semester_name
+    SELECT s.student_id, s.student_name, s.email, s.phone_number, 
+       s.admission_year, s.is_active, 
+       CONCAT(c.faculty, ' Semester ', c.semester) as class_display,
+       sem.semester_name
     FROM student s
     LEFT JOIN class c ON s.class_id = c.class_id
     LEFT JOIN semester sem ON s.semester_id = sem.semester_id
@@ -38,7 +40,7 @@ $payment_stmt = $connection->prepare("
     SELECT SUM(amount_paid) as total_paid, 
            MAX(payment_date) as last_payment
     FROM payment 
-    WHERE student_id = ? AND status = 'completed'
+    WHERE student_id = ? AND payment_status = 'Paid'
 ");
 $payment_stmt->bind_param("s", $student_id);
 $payment_stmt->execute();
@@ -63,7 +65,7 @@ $payment = $payment_stmt->get_result()->fetch_assoc();
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="bg-white bg-opacity-25 d-inline-block p-3 rounded-3">
-                                <div class="h4 mb-0"><?php echo htmlspecialchars($student['class_name']); ?></div>
+                                <div class="h4 mb-0"><?php echo htmlspecialchars($student['class_display']); ?></div>
                                 <small>Current Class</small>
                             </div>
                         </div>
@@ -146,7 +148,7 @@ $payment = $payment_stmt->get_result()->fetch_assoc();
                             <i class="bi bi-shield-check text-warning fs-4"></i>
                         </div>
                     </div>
-                    <div class="small text-muted">Since <?php echo date('M Y', strtotime($student['admission_date'])); ?></div>
+                    <div class="small text-muted">Since <?php echo $student['admission_year']; ?></div>
                 </div>
             </div>
         </div>
@@ -168,12 +170,12 @@ $payment = $payment_stmt->get_result()->fetch_assoc();
                     <?php
                     // Fetch recent results
                     $recent_stmt = $connection->prepare("
-                        SELECT r.result_id, r.exam_type, r.total_marks, r.obtained_marks, 
-                               r.grade, r.result_date, sub.subject_name
+                        SELECT r.result_id, r.total_marks, r.marks_obtained, 
+                               r.grade, r.published_date, sub.subject_name
                         FROM result r
                         JOIN subject sub ON r.subject_id = sub.subject_id
                         WHERE r.student_id = ? AND r.status = 'published'
-                        ORDER BY r.result_date DESC 
+                        ORDER BY r.published_date DESC 
                         LIMIT 5
                     ");
                     $recent_stmt->bind_param("s", $student_id);
@@ -187,7 +189,6 @@ $payment = $payment_stmt->get_result()->fetch_assoc();
                             <thead>
                                 <tr>
                                     <th>Subject</th>
-                                    <th>Exam Type</th>
                                     <th>Marks</th>
                                     <th>Grade</th>
                                     <th>Date</th>
@@ -198,10 +199,10 @@ $payment = $payment_stmt->get_result()->fetch_assoc();
                                 <tr>
                                     <td><?php echo htmlspecialchars($row['subject_name']); ?></td>
                                     <td>
-                                        <span class="badge bg-info"><?php echo htmlspecialchars($row['exam_type']); ?></span>
+                                        <span class="badge bg-info">Regular</span>
                                     </td>
                                     <td>
-                                        <strong><?php echo $row['obtained_marks']; ?></strong>
+                                        <strong><?php echo $row['marks_obtained']; ?></strong>
                                         <small class="text-muted">/<?php echo $row['total_marks']; ?></small>
                                     </td>
                                     <td>
@@ -216,7 +217,7 @@ $payment = $payment_stmt->get_result()->fetch_assoc();
                                             <?php echo $row['grade']; ?>
                                         </span>
                                     </td>
-                                    <td><?php echo date('d M Y', strtotime($row['result_date'])); ?></td>
+                                    <td><?php echo date('d M Y', strtotime($row['published_date'])); ?></td>
                                 </tr>
                                 <?php endwhile; ?>
                             </tbody>

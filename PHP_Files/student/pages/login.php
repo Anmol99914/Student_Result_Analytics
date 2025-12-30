@@ -1,7 +1,11 @@
 <?php
 // File: PHP_Files/student/pages/login.php
 require_once '../includes/auth_check.php';
-redirect_if_logged_in();
+
+// Add no-cache headers
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 
 $page_title = 'Student Portal - Login';
 $page_css = 'login';
@@ -25,7 +29,7 @@ if(isset($_GET['error'])){
 ?>
 
 <!-- Back to Home -->
-<a href="../../index.html" class="btn back-home-btn position-fixed" style="top: 25px; left: 25px; z-index: 1000;">
+<a href="../../../index.html" class="btn back-home-btn position-fixed" style="top: 25px; left: 25px; z-index: 1000;">
     <i class="bi bi-arrow-left me-2"></i>Back to Home
 </a>
 
@@ -74,24 +78,26 @@ if(isset($_GET['error'])){
 
         <!-- Login Form -->
         <form action="../api/login_validate.php" method="POST" id="studentForm" class="needs-validation" novalidate>
-            <div class="floating-label">
-                <input type="text" class="form-control" id="username" name="username" 
-                       placeholder=" " required autocomplete="username">
-                <label class="floating-text" for="username">
+                    <div class="mb-4">
+                <!-- Username field:)  -->
+                <label for="username" class="form-label">
                     <i class="bi bi-person-badge me-2"></i>Student ID
                 </label>
+                <input type="text" class="form-control" id="username" name="username" 
+                    placeholder="Enter your Student ID" required autocomplete="username">
                 <div class="invalid-feedback">
                     Please enter your Student ID.
                 </div>
-                <small class="form-text text-muted mt-1">e.g., BCA001, BBM001</small>
+                <small class="form-text text-muted">e.g., BCA001, BBM001</small>
             </div>
-            
-            <div class="floating-label">
-                <input type="password" class="form-control" id="password" name="password" 
-                       placeholder=" " required autocomplete="current-password">
-                <label class="floating-text" for="password">
+
+            <!--  password field  -->
+            <div class="mb-4">
+                <label for="password" class="form-label">
                     <i class="bi bi-key me-2"></i>Password
                 </label>
+                <input type="password" class="form-control" id="password" name="password" 
+                    placeholder="Enter your password" required autocomplete="current-password">
                 <div class="invalid-feedback">
                     Please enter your password.
                 </div>

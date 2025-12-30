@@ -6,14 +6,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize dashboard
     initDashboard();
     
-    // Set active page based on URL
-    setActivePage();
+    // so that we can load homepage immediately bro:)
+    loadHomePage();
+
     
     // Load home page by default if no content
     if (!document.querySelector('#main-content').innerHTML.trim()) {
         loadPage('../pages/home.php');
     }
 });
+
+function loadHomePage() {
+    // Check if main-content is empty, then load home
+    const mainContent = document.getElementById('main-content');
+    if (mainContent && mainContent.innerHTML.trim() === '') {
+        loadPage('../pages/home.php');
+        
+        // Set home link as active
+        document.querySelectorAll('.ajax-link').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '../pages/home.php') {
+                link.classList.add('active');
+            }
+        });
+    }
+}
 
 /**
  * Set active navigation based on current URL
@@ -185,23 +202,48 @@ function initHomePage() {
 /**
  * Initialize profile page
  */
+// File: PHP_Files/student/js/dashboard.js
+/**
+ * Initialize profile page
+ */
 function initProfilePage() {
     console.log('Profile page initialized');
     
-    // Copy email to clipboard
-    const emailElement = document.querySelector('.form-control.bg-light:contains("@")');
+    // Find email element by checking its content
+    const formControls = document.querySelectorAll('.form-control.bg-light');
+    let emailElement = null;
+    
+    formControls.forEach(element => {
+        if (element.textContent && element.textContent.includes('@')) {
+            emailElement = element;
+        }
+    });
+    
     if (emailElement) {
         emailElement.addEventListener('click', function() {
-            navigator.clipboard.writeText(this.textContent)
+            const email = this.textContent.trim();
+            navigator.clipboard.writeText(email)
                 .then(() => {
                     showToast('Email copied to clipboard!', 'success');
                 })
                 .catch(err => {
                     console.error('Failed to copy: ', err);
+                    showToast('Failed to copy email', 'error');
                 });
         });
         emailElement.style.cursor = 'pointer';
         emailElement.title = 'Click to copy';
+        
+        // Add visual feedback on hover
+        emailElement.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f0f8ff';
+            this.style.borderColor = '#0d6efd';
+        });
+        
+        emailElement.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+            this.style.borderColor = '';
+        });
     }
 }
 

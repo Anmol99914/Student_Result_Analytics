@@ -80,6 +80,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <span>Class Management</span>
                         </a>
                     </li>
+                    <!-- Student Management -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="loadStudentManagement(); return false;">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Student Management</span>
+                        </a>
+                    </li>
 
                 <!-- Subject management:) -->
                 <li class="nav-item">

@@ -8,11 +8,12 @@ require_once '../../../config.php';
 
 $student_id = $_SESSION['student_username'];
 
-// Fetch student data with class/semester info
+// Fetch student data with CORRECT column names
 $stmt = $connection->prepare("
-    SELECT s.*, c.class_name, sem.semester_name, 
-           DATE_FORMAT(s.admission_date, '%d %M %Y') as formatted_date,
-           DATE_FORMAT(s.date_of_birth, '%d %M %Y') as dob_formatted
+    SELECT s.student_id, s.student_name, s.email, s.phone_number, 
+           s.admission_year, s.is_active, s.created_at, s.batch_code,
+           c.faculty, c.semester, 
+           sem.semester_name
     FROM student s
     LEFT JOIN class c ON s.class_id = c.class_id
     LEFT JOIN semester sem ON s.semester_id = sem.semester_id
@@ -27,6 +28,10 @@ if (!$student) {
     echo '<div class="alert alert-danger">Student not found!</div>';
     exit;
 }
+
+// Format dates
+$admission_date = $student['admission_year'];
+$created_date = date('d M Y', strtotime($student['created_at']));
 ?>
 
 <div class="container-fluid">
@@ -45,8 +50,8 @@ if (!$student) {
                             <h1 class="card-title mb-1"><?php echo htmlspecialchars($student['student_name']); ?></h1>
                             <p class="card-text opacity-75 mb-0">
                                 <i class="bi bi-award me-1"></i>
-                                <?php echo htmlspecialchars($student['class_name']); ?> • 
-                                <?php echo htmlspecialchars($student['semester_name']); ?> Semester
+                                <?php echo htmlspecialchars($student['faculty']); ?> • 
+                                Semester <?php echo $student['semester']; ?>
                             </p>
                         </div>
                         <div class="col-auto">
@@ -81,24 +86,26 @@ if (!$student) {
                             <div class="form-control bg-light"><?php echo htmlspecialchars($student['student_name']); ?></div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label text-muted small">Date of Birth</label>
-                            <div class="form-control bg-light">
-                                <?php echo $student['dob_formatted'] ?? 'Not specified'; ?>
-                            </div>
+                            <label class="form-label text-muted small">Admission Year</label>
+                            <div class="form-control bg-light"><?php echo $student['admission_year']; ?></div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label text-muted small">Email Address</label>
-                            <div class="form-control bg-light"><?php echo htmlspecialchars($student['email']); ?></div>
+                            <div class="form-control bg-light student-email">
+                                <?php echo htmlspecialchars($student['email']); ?>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label text-muted small">Phone Number</label>
-                            <div class="form-control bg-light"><?php echo htmlspecialchars($student['phone']); ?></div>
+                            <div class="form-control bg-light"><?php echo htmlspecialchars($student['phone_number'] ?? 'Not provided'); ?></div>
                         </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label text-muted small">Address</label>
-                            <div class="form-control bg-light" style="min-height: 80px;">
-                                <?php echo htmlspecialchars($student['address']); ?>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small">Batch Code</label>
+                            <div class="form-control bg-light"><?php echo htmlspecialchars($student['batch_code']); ?></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small">Account Created</label>
+                            <div class="form-control bg-light"><?php echo $created_date; ?></div>
                         </div>
                     </div>
                 </div>
@@ -121,16 +128,16 @@ if (!$student) {
                             <strong><?php echo htmlspecialchars($student_id); ?></strong>
                         </div>
                         <div class="list-group-item px-0 border-0 d-flex justify-content-between">
-                            <span class="text-muted">Class</span>
-                            <strong><?php echo htmlspecialchars($student['class_name']); ?></strong>
+                            <span class="text-muted">Faculty</span>
+                            <strong><?php echo htmlspecialchars($student['faculty']); ?></strong>
                         </div>
                         <div class="list-group-item px-0 border-0 d-flex justify-content-between">
                             <span class="text-muted">Semester</span>
                             <strong><?php echo htmlspecialchars($student['semester_name']); ?></strong>
                         </div>
                         <div class="list-group-item px-0 border-0 d-flex justify-content-between">
-                            <span class="text-muted">Admission Date</span>
-                            <strong><?php echo $student['formatted_date']; ?></strong>
+                            <span class="text-muted">Admission Year</span>
+                            <strong><?php echo $student['admission_year']; ?></strong>
                         </div>
                         <div class="list-group-item px-0 border-0 d-flex justify-content-between">
                             <span class="text-muted">Status</span>
@@ -212,3 +219,24 @@ if (!$student) {
         </div>
     </div>
 </div>
+
+<script>
+// Email copy functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const emailElement = document.querySelector('.student-email');
+    if (emailElement) {
+        emailElement.addEventListener('click', function() {
+            const email = this.textContent.trim();
+            navigator.clipboard.writeText(email)
+                .then(() => {
+                    alert('Email copied to clipboard!');
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+        });
+        emailElement.style.cursor = 'pointer';
+        emailElement.title = 'Click to copy';
+    }
+});
+</script>

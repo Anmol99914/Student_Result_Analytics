@@ -11,24 +11,44 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-focus on Student ID field
     document.getElementById('username').focus();
     
-    // Initialize floating labels
-    const floatingInputs = document.querySelectorAll('.floating-label .form-control');
-    floatingInputs.forEach(input => {
-        // Check if input has value on page load
-        if (input.value.trim() !== '') {
-            input.nextElementSibling.classList.add('active');
-        }
-        
-        input.addEventListener('focus', function() {
-            this.nextElementSibling.classList.add('active');
-        });
-        
-        input.addEventListener('blur', function() {
-            if (this.value.trim() === '') {
-                this.nextElementSibling.classList.remove('active');
-            }
-        });
-    });
+       // Floating labels - Improved version
+       const floatingInputs = document.querySelectorAll('.floating-label .form-control');
+       floatingInputs.forEach(input => {
+           // Set placeholder to empty string for floating labels
+           input.setAttribute('placeholder', ' ');
+           
+           // Check if input has value on page load
+           if (input.value.trim() !== '') {
+               input.parentElement.classList.add('has-value');
+               input.nextElementSibling.classList.add('active');
+           }
+           
+           input.addEventListener('focus', function() {
+               this.parentElement.classList.add('focused');
+               this.nextElementSibling.classList.add('active');
+           });
+           
+           input.addEventListener('blur', function() {
+               this.parentElement.classList.remove('focused');
+               if (this.value.trim() === '') {
+                   this.nextElementSibling.classList.remove('active');
+                   this.parentElement.classList.remove('has-value');
+               } else {
+                   this.parentElement.classList.add('has-value');
+               }
+           });
+           
+           // Auto-uppercase for Student ID
+           if (input.id === 'username') {
+               input.addEventListener('input', function() {
+                   this.value = this.value.toUpperCase();
+                   if (this.value.trim() !== '') {
+                       this.nextElementSibling.classList.add('active');
+                       this.parentElement.classList.add('has-value');
+                   }
+               });
+           }
+       });   
     
     // Student ID format validation
     const studentIdInput = document.getElementById('username');
