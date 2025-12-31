@@ -1,3 +1,4 @@
+<!-- add_student.php -->
 <?php
 session_start();
 require_once '../../../config.php';

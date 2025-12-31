@@ -1,0 +1,239 @@
+/* ===== BASE LAYOUT FIXES ===== */
+body.teacher-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+}
+
+/* Fix the main container */
+.teacher-container {
+    flex: 1;
+    display: flex;
+    min-height: calc(100vh - 73px); /* Subtract navbar height */
+    overflow: hidden;
+}
+
+/* Fix sidebar to extend full height */
+.teacher-sidebar {
+    min-height: 100%;
+    height: auto;
+    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 73px;
+    z-index: 1020;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Fix main content area */
+.teacher-main-content {
+    flex: 1;
+    background-color: #f8f9fa;
+    overflow-y: auto;
+    max-height: calc(100vh - 73px);
+    padding: 25px;
+}
+
+/* Fix the row container */
+.teacher-container .row {
+    flex: 1;
+    margin: 0;
+    min-height: 100%;
+}
+
+/* Make sure sidebar column extends full height */
+.teacher-container .row > .col-12.col-md-3.col-lg-2 {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+/* Sidebar content */
+.teacher-sidebar > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Sidebar navigation */
+.teacher-sidebar .nav {
+    flex: 1;
+    padding: 15px;
+}
+
+/* Fix footer positioning */
+.teacher-footer {
+    background: #f8f9fa !important;
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: auto;
+    border-top: 1px solid #e9ecef;
+}
+
+/* ===== MOBILE FIXES ===== */
+@media (max-width: 767.98px) {
+    .teacher-container {
+        min-height: calc(100vh - 73px);
+    }
+    
+    .teacher-main-content {
+        padding: 15px;
+        max-height: none;
+    }
+}
+
+/* ===== DASHBOARD CARDS ENHANCEMENT ===== */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.dashboard-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    overflow: hidden;
+    background: white;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+
+.dashboard-card .card-body {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.dashboard-card .display-4 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+/* Welcome section enhancement */
+.welcome-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    padding: 40px;
+    margin-bottom: 30px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+/* ===== SIDEBAR ENHANCEMENT ===== */
+.teacher-sidebar {
+    background: linear-gradient(to bottom, 
+        #2c3e50 0%, 
+        #2c3e50 20%, 
+        #34495e 40%, 
+        #34495e 60%, 
+        #2c3e50 80%, 
+        #2c3e50 100%);
+}
+
+.teacher-sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+}
+
+.teacher-sidebar .nav-link i {
+    width: 20px;
+    margin-right: 10px;
+    font-size: 1.1rem;
+}
+
+.teacher-sidebar .nav-link:hover {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-left-color: #0d6efd;
+    transform: translateX(5px);
+}
+
+.teacher-sidebar .nav-link.active {
+    color: white !important;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    font-weight: 600;
+    border-left-color: white;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+/* Make sidebar header stand out */
+.teacher-sidebar h5 {
+    color: white;
+    font-weight: 600;
+    padding: 20px 15px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 15px;
+}
+
+/* Add to teacher_dashboard.css */
+.class-header {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.student-actions .btn {
+    margin: 0 2px;
+    padding: 4px 8px;
+}
+
+/* Make table more compact for student list */
+.student-table tbody td {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+}
+
+/* Add to teacher_dashboard.css */
+.class-info-card .card-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+}
+
+.quick-stats-card .card-header {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%) !important;
+}
+
+.subject-card {
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.subject-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    border-radius: 0 !important;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}

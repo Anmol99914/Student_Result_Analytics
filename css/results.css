@@ -1,0 +1,101 @@
+/* Results System Styles */
+.result-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.result-card .card-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #4a6572 100%);
+    color: white;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.marks-input-group {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.marks-input-group:hover {
+    background: #e9ecef;
+}
+
+.student-row {
+    transition: background-color 0.2s;
+}
+
+.student-row:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.grade-badge {
+    font-size: 0.85rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.grade-Aplus { background-color: #28a745; color: white; }
+.grade-A { background-color: #20c997; color: white; }
+.grade-Bplus { background-color: #ffc107; color: #000; }
+.grade-B { background-color: #fd7e14; color: white; }
+.grade-Cplus { background-color: #6f42c1; color: white; }
+.grade-C { background-color: #e83e8c; color: white; }
+.grade-F { background-color: #dc3545; color: white; }
+
+.progress-sm {
+    height: 6px;
+}
+
+.verification-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.status-pending { color: #ffc107; }
+.status-verified { color: #28a745; }
+.status-rejected { color: #dc3545; }
+
+/* Table styles for results */
+.results-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.results-table td {
+    vertical-align: middle;
+}
+
+/* Form controls for marks entry */
+.marks-input {
+    max-width: 120px;
+    text-align: center;
+}
+
+.total-marks {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .marks-input {
+        max-width: 100%;
+    }
+    
+    .student-row {
+        padding: 10px 0;
+    }
+}

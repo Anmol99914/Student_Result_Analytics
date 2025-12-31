@@ -1,3 +1,4 @@
+<!-- teacher_my_classes.php -->
 <?php
 include '../../../config.php';
 session_start();

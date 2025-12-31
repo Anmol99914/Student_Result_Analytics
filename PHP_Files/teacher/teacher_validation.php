@@ -1,3 +1,4 @@
+<!-- teacher_validation.php -->
 <?php
 session_start();
 include('../../config.php');
